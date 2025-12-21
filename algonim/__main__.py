@@ -2,6 +2,7 @@ import pathlib
 import pyglet
 from PIL import Image
 from pyglet import shapes
+from pyglet.window import key
 
 from algonim.hcode import HighlightedCode
 from algonim.easing import EasingTransition, cubic_ease_in_out
@@ -224,6 +225,10 @@ class AlgonimWindow(pyglet.window.Window):
                 object.draw()
             except:
                 print(object)
+
+    def on_key_press(self, symbol, modifiers):
+        if symbol == key.Q:
+            self.close()
 
     # def on_resize(self, width, height):
     #     self.label.width = self.width
