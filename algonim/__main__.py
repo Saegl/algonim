@@ -12,40 +12,6 @@ TRANSPARENT = (255, 255, 255, 0)
 BLACK = (0, 0, 0, 255)
 
 
-class Code:
-    def __init__(self, x, y, codetext: str):
-        self.x = x
-        self.y = y
-
-        self.label = pyglet.text.Label(
-            codetext,
-            font_size=36,
-            x=self.x,
-            y=self.y,
-            anchor_x="center",
-            anchor_y="center",
-        )
-        self.creation_time = 0.0
-        self.set_color(BLACK)
-
-    def draw(self):
-        self.label.draw()
-
-    def set_color(self, color):
-        self.label.color = color
-
-    def creation(self, delta):
-        self.creation_time += delta
-        alpha = min(255, int(self.creation_time * 254))
-        if alpha == 255:
-            return True
-
-        new_color = (*WHITE[0:3], alpha)
-
-        self.set_color(new_color)
-        return False
-
-
 class Array:
     def __init__(self, x, y, data: list[int], thickness: float = 5.0):
         self.x = x
