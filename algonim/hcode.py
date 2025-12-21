@@ -104,7 +104,7 @@ class HighlightedCode:
         )
 
     def hl(self, lineno: int, line):
-        from easing import EasingTransition
+        from algonim.easing import EasingTransition
 
         # current_y = self.cursor.shaft.y
         # line_y = self.layout._get_lines()[lineno].y
