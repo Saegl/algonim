@@ -59,19 +59,30 @@ def run_script(window, script_writer):
     script_exec.start()
 
 
-def fade_in(primitive, duration: float = 1.0) -> ActionFn:
-    elapsed_time = 0.0
+def fade_in(obj, duration=1.0, ease=linear_ease) -> ActionFn:
+    elapsed = 0.0
 
-    def action(dt: float) -> bool:
-        nonlocal elapsed_time
+    def action(dt):
+        nonlocal elapsed
+        elapsed += dt
+        u = min(1.0, elapsed / duration)
+        a = int(255 * ease(u))
+        obj.set_color((*WHITE[:3], a))
+        return u >= 1.0
 
-        elapsed_time += dt
+    return action
 
-        alpha = min(255, int(elapsed_time / duration * 254))
-        new_color = (*WHITE[0:3], alpha)
-        primitive.set_color(new_color)
 
-        return elapsed_time >= duration
+def fade_out(obj, duration=1.0, ease=linear_ease) -> ActionFn:
+    elapsed = 0.0
+
+    def action(dt):
+        nonlocal elapsed
+        elapsed += dt
+        u = min(1.0, elapsed / duration)
+        a = int(255 * (1.0 - ease(u)))
+        obj.set_color((*WHITE[:3], a))
+        return u >= 1.0
 
     return action
 
