@@ -1,7 +1,7 @@
 import pyglet
 from pyglet import shapes
 
-from algonim.colors import WHITE
+from algonim.colors import TRANSPARENT, WHITE
 
 
 class Array:
@@ -78,6 +78,7 @@ class Array:
                     anchor_y="center",
                 )
             )
+        self.set_color(TRANSPARENT)
 
     def draw(self):
         self.left_border.draw()
