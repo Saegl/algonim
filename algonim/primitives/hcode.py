@@ -5,7 +5,7 @@ from pygments.lexers import PythonLexer
 from pygments.styles import get_style_by_name
 from pygments.token import Token
 
-from algonim.easing import cubic_ease_in_out
+from algonim.easing import ease_in_out_cubic
 from algonim.primitives.arrow import Arrow
 from algonim.script import ActionFn, defer, move_to
 
@@ -109,7 +109,7 @@ class HighlightedCode:
             line_y = self.layout._get_lines()[lineno].y
             final_y = line_y + self.layout.y + self.layout.content_height + 60
 
-            return move_to(self.cursor, self.cursor.x, final_y, 0.5, cubic_ease_in_out)
+            return move_to(self.cursor, self.cursor.x, final_y, 0.5, ease_in_out_cubic)
 
         return defer(make)
 

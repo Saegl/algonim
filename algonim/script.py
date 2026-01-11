@@ -3,7 +3,7 @@ from collections.abc import Callable
 import pyglet
 
 from algonim.colors import WHITE
-from algonim.easing import cubic_ease_in_out, linear_ease
+from algonim.easing import ease_in_out_cubic, ease_linear
 from algonim.time_utils import Timer
 
 type ActionFn = Callable[[float], bool]
@@ -59,7 +59,7 @@ def run_script(window, script_writer):
     script_exec.start()
 
 
-def fade_in(obj, duration=1.0, ease=linear_ease) -> ActionFn:
+def fade_in(obj, duration=1.0, ease=ease_linear) -> ActionFn:
     elapsed = 0.0
 
     def action(dt):
@@ -73,7 +73,7 @@ def fade_in(obj, duration=1.0, ease=linear_ease) -> ActionFn:
     return action
 
 
-def fade_out(obj, duration=1.0, ease=linear_ease) -> ActionFn:
+def fade_out(obj, duration=1.0, ease=ease_linear) -> ActionFn:
     elapsed = 0.0
 
     def action(dt):
@@ -88,7 +88,7 @@ def fade_out(obj, duration=1.0, ease=linear_ease) -> ActionFn:
 
 
 def tween_xy(
-    obj, start_x, start_y, end_x, end_y, duration, ease=linear_ease
+    obj, start_x, start_y, end_x, end_y, duration, ease=ease_linear
 ) -> ActionFn:
     t = 0.0
     dx = end_x - start_x
@@ -106,22 +106,22 @@ def tween_xy(
     return action
 
 
-def move_to(obj, x, y, duration, ease=linear_ease) -> ActionFn:
+def move_to(obj, x, y, duration, ease=ease_linear) -> ActionFn:
     start_x = obj.x
     start_y = obj.y
     return tween_xy(obj, start_x, start_y, x, y, duration, ease)
 
 
-def move_by(obj, dx, dy, duration, ease=linear_ease) -> ActionFn:
+def move_by(obj, dx, dy, duration, ease=ease_linear) -> ActionFn:
     return defer(lambda: move_to(obj, obj.x + dx, obj.y + dy, duration, ease))
 
 
-def move_up(obj, amount, seconds) -> ActionFn:
-    return move_by(obj, 0, amount, seconds, cubic_ease_in_out)
+def move_up(obj, amount, seconds, ease=ease_in_out_cubic) -> ActionFn:
+    return move_by(obj, 0, amount, seconds, ease)
 
 
-def move_down(obj, amount, seconds) -> ActionFn:
-    return move_by(obj, 0, -amount, seconds, cubic_ease_in_out)
+def move_down(obj, amount, seconds, ease=ease_in_out_cubic) -> ActionFn:
+    return move_by(obj, 0, -amount, seconds, ease)
 
 
 def defer(factory) -> ActionFn:
