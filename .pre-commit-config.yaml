@@ -5,3 +5,10 @@ repos:
       - id: ruff
         args: [--fix]
       - id: ruff-format
+  - repo: local
+    hooks:
+      - id: mypy  # Run locally, because official hook runs in venv, missing thirdparty type info
+        name: mypy
+        entry: mypy
+        language: system
+        types: [python]
