@@ -142,11 +142,11 @@ def parallel(*actions: ActionFn) -> ActionFn:
     remaining = set(actions)
 
     def combined_action(delta: float):
-        for action in list(actions):
+        for action in list(remaining):
             if action(delta):
                 remaining.remove(action)
 
-        return len(actions) == 0
+        return len(remaining) == 0
 
     return combined_action
 
