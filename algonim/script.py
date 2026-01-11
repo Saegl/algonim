@@ -84,31 +84,41 @@ def animate_deletion(obj: Array):
     return obj.deletion
 
 
-def move(obj, dx, dy, duration, ease=linear_ease) -> ActionFn:
+def tween_xy(
+    obj, start_x, start_y, end_x, end_y, duration, ease=linear_ease
+) -> ActionFn:
     t = 0.0
-    start_x = obj.x
-    start_y = obj.y
+    dx = end_x - start_x
+    dy = end_y - start_y
 
-    def action(dt) -> bool:
+    def action(dt):
         nonlocal t
         t += dt
         u = min(1.0, t / duration)
         e = ease(u)
-
         obj.set_x(start_x + dx * e)
         obj.set_y(start_y + dy * e)
-
         return u >= 1.0
 
     return action
 
 
+def move_to(obj, x, y, duration, ease=linear_ease) -> ActionFn:
+    start_x = obj.x
+    start_y = obj.y
+    return tween_xy(obj, start_x, start_y, x, y, duration, ease)
+
+
+def move_by(obj, dx, dy, duration, ease=linear_ease) -> ActionFn:
+    return defer(lambda: move_to(obj, obj.x + dx, obj.y + dy, duration, ease))
+
+
 def move_up(obj, amount, seconds) -> ActionFn:
-    return move(obj, 0, amount, seconds, cubic_ease_in_out)
+    return move_by(obj, 0, amount, seconds, cubic_ease_in_out)
 
 
 def move_down(obj, amount, seconds) -> ActionFn:
-    return move(obj, 0, -amount, seconds, cubic_ease_in_out)
+    return move_by(obj, 0, -amount, seconds, cubic_ease_in_out)
 
 
 def defer(factory) -> ActionFn:

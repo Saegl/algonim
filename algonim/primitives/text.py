@@ -15,9 +15,11 @@ class Text:
         self.label.color = color
 
     def set_x(self, x):
+        self.x = x
         self.label.x = x
 
     def set_y(self, y):
+        self.y = y
         self.label.y = y
 
     def draw(self):

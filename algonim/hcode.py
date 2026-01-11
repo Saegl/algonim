@@ -7,7 +7,7 @@ from pygments.token import Token
 
 from algonim.primitives.arrow import Arrow
 from algonim.easing import cubic_ease_in_out
-from algonim.script import ActionFn, defer, move
+from algonim.script import ActionFn, defer, move_to
 
 
 def hex_to_rgba(hex_color: str) -> tuple[int, int, int, int]:
@@ -105,13 +105,11 @@ class HighlightedCode:
         )
 
     def hl(self, lineno: int, line) -> ActionFn:
-        def make() -> ActionFn:
-            current_y = self.cursor.shaft.y
+        def make():
             line_y = self.layout._get_lines()[lineno].y
             final_y = line_y + self.layout.y + self.layout.content_height + 60
-            dy = final_y - current_y
 
-            return move(self.cursor, 0, dy, 0.5, cubic_ease_in_out)
+            return move_to(self.cursor, self.cursor.x, final_y, 0.5, cubic_ease_in_out)
 
         return defer(make)
 
