@@ -5,6 +5,7 @@ from algonim.hcode import HighlightedCode
 from algonim.easing import EasingTransition, cubic_ease_in_out
 from algonim.primitives.var import Var
 from algonim.primitives.array import Array
+from algonim.time_utils import Timer
 
 
 class Script:
@@ -42,7 +43,8 @@ class ScriptExecutor:
 
 
 def run_script(window, script_writer):
-    script = script_writer(window)
+    with Timer("script_writer"):
+        script = script_writer(window)
 
     script_exec = ScriptExecutor(script)
     script_exec.start()
