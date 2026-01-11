@@ -7,6 +7,7 @@ from pygments.token import Token
 
 from algonim.primitives.arrow import Arrow
 from algonim.easing import cubic_ease_in_out
+from algonim.script import ActionFn, defer, move
 
 
 def hex_to_rgba(hex_color: str) -> tuple[int, int, int, int]:
@@ -103,51 +104,16 @@ class HighlightedCode:
             width=3,
         )
 
-    def hl(self, lineno: int, line):
-        from algonim.easing import EasingTransition
+    def hl(self, lineno: int, line) -> ActionFn:
+        def make() -> ActionFn:
+            current_y = self.cursor.shaft.y
+            line_y = self.layout._get_lines()[lineno].y
+            final_y = line_y + self.layout.y + self.layout.content_height + 60
+            dy = final_y - current_y
 
-        # current_y = self.cursor.shaft.y
-        # line_y = self.layout._get_lines()[lineno].y
-        # final_y = line_y + self.layout.y + self.layout.content_height + 60
-        #
-        # diff = final_y - current_y
-        # amount = abs(diff)
-        #
-        # transition = EasingTransition(
-        #     1, amount, self.cursor, cubic_ease_in_out, (0.0, -1.0 if diff < 0 else 1.0)
-        # )
-        # transition.step(0.1)
+            return move(self.cursor, 0, dy, 0.5, cubic_ease_in_out)
 
-        transition = None
-
-        first_call = True
-
-        def step(delta):
-            nonlocal transition
-            if transition is None:
-                current_y = self.cursor.shaft.y
-                line_y = self.layout._get_lines()[lineno].y
-                final_y = line_y + self.layout.y + self.layout.content_height + 60
-
-                diff = final_y - current_y
-                amount = abs(diff)
-
-                transition = EasingTransition(
-                    0.5,
-                    amount,
-                    self.cursor,
-                    cubic_ease_in_out,
-                    (0.0, -1.0 if diff < 0 else 1.0),
-                )
-                return transition.step(delta)
-            else:
-                return transition.step(delta)
-
-        # def sethl(delta):
-        #     self.cursor.set_y(final_y)
-        #     return True
-
-        return step
+        return defer(make)
 
     def draw(self):
         self.layout.draw()

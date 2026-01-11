@@ -3,7 +3,7 @@ import pyglet
 from algonim.colors import WHITE
 from algonim.primitives.array import Array
 
-from algonim.easing import EasingTransition, cubic_ease_in_out
+from algonim.easing import cubic_ease_in_out, linear_ease
 from algonim.time_utils import Timer
 
 type ActionFn = Callable[[float], bool]
@@ -84,12 +84,45 @@ def animate_deletion(obj: Array):
     return obj.deletion
 
 
-def move_up(obj: Array, amount: int, seconds: int):
-    return EasingTransition(seconds, amount, obj, cubic_ease_in_out, (0.0, 1.0)).step
+def move(obj, dx, dy, duration, ease=linear_ease) -> ActionFn:
+    t = 0.0
+    start_x = obj.x
+    start_y = obj.y
+
+    def action(dt) -> bool:
+        nonlocal t
+        t += dt
+        u = min(1.0, t / duration)
+        e = ease(u)
+
+        obj.set_x(start_x + dx * e)
+        obj.set_y(start_y + dy * e)
+
+        return u >= 1.0
+
+    return action
 
 
-def move_down(obj: Array, amount: int, seconds: int):
-    return EasingTransition(seconds, amount, obj, cubic_ease_in_out, (0.0, -1.0)).step
+def move_up(obj, amount, seconds) -> ActionFn:
+    return move(obj, 0, amount, seconds, cubic_ease_in_out)
+
+
+def move_down(obj, amount, seconds) -> ActionFn:
+    return move(obj, 0, -amount, seconds, cubic_ease_in_out)
+
+
+def defer(factory) -> ActionFn:
+    "Late binding"
+
+    action = None
+
+    def run(dt):
+        nonlocal action
+        if action is None:
+            action = factory()
+        return action(dt)
+
+    return run
 
 
 def parallel(*actions: ActionFn) -> ActionFn:
