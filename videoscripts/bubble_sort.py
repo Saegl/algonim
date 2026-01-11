@@ -1,6 +1,6 @@
 import pathlib
 
-from algonim.hcode import HighlightedCode
+from algonim.primitives.hcode import HighlightedCode
 from algonim.primitives.var import Var
 from algonim.python_tracer import Snapshot, trace
 from algonim.script import Script, wait
