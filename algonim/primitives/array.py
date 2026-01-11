@@ -1,6 +1,7 @@
 import pyglet
-from algonim.colors import WHITE
 from pyglet import shapes
+
+from algonim.colors import WHITE
 
 
 class Array:

@@ -1,10 +1,10 @@
-import sys
-import runpy
 import linecache
 import pathlib
+import runpy
+import sys
 from copy import deepcopy
-from typing import Any
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -51,7 +51,7 @@ class Tracer:
             return self.tracer
 
         code = frame.f_code
-        func_name = code.co_name
+        _func_name = code.co_name
         lineno = frame.f_lineno
         filename = code.co_filename
 

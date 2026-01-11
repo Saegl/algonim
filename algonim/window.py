@@ -1,6 +1,6 @@
 import pyglet
-from pyglet.window import key
 from PIL import Image
+from pyglet.window import key
 
 
 class AppWindow(pyglet.window.Window):
@@ -21,17 +21,11 @@ class AppWindow(pyglet.window.Window):
     def on_draw(self):
         self.clear()
         for object in self.objects:
-            try:
-                object.draw()
-            except:
-                print(object)
+            object.draw()
 
     def on_key_press(self, symbol, modifiers):
         if symbol == key.Q:
             self.close()
-
-    # def on_resize(self, width, height):
-    #     self.label.width = self.width
 
     def capture_frame(self, delta):
         import numpy as np

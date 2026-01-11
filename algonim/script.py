@@ -1,8 +1,8 @@
-from typing import Callable
-import pyglet
-from algonim.colors import WHITE
-from algonim.primitives.array import Array
+from collections.abc import Callable
 
+import pyglet
+
+from algonim.colors import WHITE
 from algonim.easing import cubic_ease_in_out, linear_ease
 from algonim.time_utils import Timer
 

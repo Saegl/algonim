@@ -1,9 +1,10 @@
-import pyglet
 import importlib.util
 from pathlib import Path
 
-from algonim.window import AppWindow
+import pyglet
+
 from algonim.script import run_script
+from algonim.window import AppWindow
 
 
 def load_script(path: Path):

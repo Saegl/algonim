@@ -1,11 +1,10 @@
 import pathlib
 
-from algonim.python_tracer import Snapshot, trace
-from algonim.window import AppWindow
-from algonim.script import Script, wait
 from algonim.hcode import HighlightedCode
 from algonim.primitives.var import Var
-
+from algonim.python_tracer import Snapshot, trace
+from algonim.script import Script, wait
+from algonim.window import AppWindow
 
 bubble_sort_code = """\
 arr = [3, 1, 3, 4, 6, 9, 5]
@@ -24,15 +23,6 @@ for i in reversed(range(n)):
 
 def build_script(window: AppWindow):
     script = Script()
-
-    win_center_x = window.width // 2
-    win_center_y = window.height // 2
-
-    # arr = Array(win_center_x, win_center_y + 300, [4, 1, 2, 5, 3, 4])
-    # window.objects.append(arr)
-
-    # script.do(fade_in(arr))
-    # script.do(move_up(arr, amount=300, seconds=2))
 
     program_filepath = pathlib.Path("videoprograms/bubble_sort.py")
 
@@ -55,9 +45,7 @@ def build_script(window: AppWindow):
     prev_snapshot = Snapshot({}, "", -1)
     for lineno, snapshot in lines:
         new_vars, changed = snapshot.diff(prev_snapshot)
-        # print(prev_snapshot, snapshot)
         print(new_vars, changed)
-        # print(snapshot)
 
         script.do(code.hl(lineno, snapshot.line))
         prev_snapshot = snapshot

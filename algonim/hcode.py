@@ -1,12 +1,12 @@
 import pyglet
 from pygments import highlight
-from pygments.lexers import PythonLexer
 from pygments.formatter import Formatter
+from pygments.lexers import PythonLexer
 from pygments.styles import get_style_by_name
 from pygments.token import Token
 
-from algonim.primitives.arrow import Arrow
 from algonim.easing import cubic_ease_in_out
+from algonim.primitives.arrow import Arrow
 from algonim.script import ActionFn, defer, move_to
 
 
@@ -23,7 +23,7 @@ class PygletFormatter(Formatter):
     def __init__(self, **options):
         super().__init__(**options)
         style = get_style_by_name(options.get("style", "monokai"))
-        self.styles = {token: style for token, style in style}
+        self.styles = dict(style)
         self.default_style = self.styles.get(Token.Text, {"color": "#000000"})
 
     def format(self, tokensource, outfile):

@@ -1,5 +1,6 @@
-import pyglet
 import math
+
+import pyglet
 
 
 class Arrow:

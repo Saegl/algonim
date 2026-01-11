@@ -1,14 +1,14 @@
-from algonim.window import AppWindow
+from algonim.primitives.array import Array
+from algonim.primitives.text import Text
 from algonim.script import (
     Script,
     fade_in,
     fade_out,
+    move_down,
     move_up,
     wait,
-    move_down,
 )
-from algonim.primitives.array import Array
-from algonim.primitives.text import Text
+from algonim.window import AppWindow
 
 
 def build_script(window: AppWindow):
