@@ -145,8 +145,3 @@ class ArrowExample(pyglet.window.Window):
     def on_draw(self):
         self.clear()
         self.batch.draw()
-
-
-if __name__ == "__main__":
-    window = ArrowExample()
-    pyglet.app.run()

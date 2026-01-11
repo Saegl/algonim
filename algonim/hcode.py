@@ -118,15 +118,3 @@ class HighlightedCode:
         self.cursor.draw()
         self.numbers.draw()
         self.line.draw()
-
-
-if __name__ == "__main__":
-    window = pyglet.window.Window(800, 600, "Pygments in Pyglet")
-    hcode = HighlightedCode(code, 0, 0, 32)
-
-    @window.event
-    def on_draw():
-        window.clear()
-        hcode.draw()
-
-    pyglet.app.run()

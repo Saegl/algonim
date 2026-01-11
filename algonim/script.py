@@ -18,7 +18,7 @@ Returns:
 
 
 class Script:
-    def __init__(self):
+    def __init__(self) -> None:
         self.steps: list[ActionFn] = []
 
     def do(self, action: ActionFn):
@@ -139,12 +139,12 @@ def defer(factory) -> ActionFn:
 
 
 def parallel(*actions: ActionFn) -> ActionFn:
-    actions = set(actions)
+    remaining = set(actions)
 
     def combined_action(delta: float):
         for action in list(actions):
             if action(delta):
-                actions.remove(action)
+                remaining.remove(action)
 
         return len(actions) == 0
 

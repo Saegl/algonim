@@ -44,7 +44,7 @@ class Tracer:
         self.filepath = filepath
         self.watched_file = filepath.name
         self.watched_vars = watched_vars
-        self.result = []
+        self.result: list[tuple[int, Snapshot]] = []
 
     def tracer(self, frame, event, arg=None):
         if event != "line":

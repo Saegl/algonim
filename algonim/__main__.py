@@ -33,7 +33,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    window = AppWindow()
+    # Type ignore here is a bug in pyglet typing
+    window = AppWindow()  # type: ignore[abstract]
     build_script = load_script(Path(args.script))
 
     run_script(window, build_script)
