@@ -46,8 +46,8 @@ class ScriptExecutor:
             return
 
         action = self.script.steps[self.index]
-        is_action_compelete = action(delta)
-        if is_action_compelete:
+        is_action_complete = action(delta)
+        if is_action_complete:
             self.index += 1
 
 
