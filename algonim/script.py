@@ -87,14 +87,6 @@ def fade_out(obj, duration=1.0, ease=linear_ease) -> ActionFn:
     return action
 
 
-def animate_creation(obj: Array):
-    return obj.creation
-
-
-def animate_deletion(obj: Array):
-    return obj.deletion
-
-
 def tween_xy(
     obj, start_x, start_y, end_x, end_y, duration, ease=linear_ease
 ) -> ActionFn:

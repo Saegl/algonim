@@ -1,5 +1,5 @@
 import pyglet
-from algonim.colors import WHITE, TRANSPARENT
+from algonim.colors import WHITE
 from pyglet import shapes
 
 
@@ -78,10 +78,6 @@ class Array:
                 )
             )
 
-        self.creation_time = 0.0
-        self.deletion_time = 0.0
-        self.set_color(TRANSPARENT)
-
     def draw(self):
         self.left_border.draw()
         self.right_border.draw()
@@ -135,25 +131,3 @@ class Array:
 
         for entry in self.entries:
             entry.color = color
-
-    def creation(self, delta):
-        self.creation_time += delta
-        alpha = min(255, int(self.creation_time * 254))
-        if alpha == 255:
-            return True
-
-        new_color = (*WHITE[0:3], alpha)
-
-        self.set_color(new_color)
-        return False
-
-    def deletion(self, delta):
-        self.deletion_time += delta
-        alpha = max(0, 255 - int(self.deletion_time * 254))
-        if alpha == 0:
-            return True
-
-        new_color = (*WHITE[0:3], alpha)
-
-        self.set_color(new_color)
-        return False

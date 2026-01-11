@@ -31,7 +31,7 @@ def build_script(window: AppWindow):
     # arr = Array(win_center_x, win_center_y + 300, [4, 1, 2, 5, 3, 4])
     # window.objects.append(arr)
 
-    # script.do(animate_creation(arr))
+    # script.do(fade_in(arr))
     # script.do(move_up(arr, amount=300, seconds=2))
 
     program_filepath = pathlib.Path("videoprograms/bubble_sort.py")
