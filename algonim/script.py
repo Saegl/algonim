@@ -1,18 +1,27 @@
+from typing import Callable
 import pyglet
+from algonim.colors import WHITE
 from algonim.primitives.array import Array
 
-from algonim.hcode import HighlightedCode
 from algonim.easing import EasingTransition, cubic_ease_in_out
-from algonim.primitives.var import Var
-from algonim.primitives.array import Array
 from algonim.time_utils import Timer
+
+type ActionFn = Callable[[float], bool]
+"""Represents an animated action
+
+Args:
+    value (float): Delta time (in seconds) since the last call
+
+Returns:
+    bool: True if the animation is completed, False otherwise
+"""
 
 
 class Script:
     def __init__(self):
-        self.steps = []
+        self.steps: list[ActionFn] = []
 
-    def do(self, action):
+    def do(self, action: ActionFn):
         self.steps.append(action)
 
 
@@ -50,6 +59,23 @@ def run_script(window, script_writer):
     script_exec.start()
 
 
+def fade_in(primitive, duration: float = 1.0) -> ActionFn:
+    elapsed_time = 0.0
+
+    def action(dt: float) -> bool:
+        nonlocal elapsed_time
+
+        elapsed_time += dt
+
+        alpha = min(255, int(elapsed_time / duration * 254))
+        new_color = (*WHITE[0:3], alpha)
+        primitive.set_color(new_color)
+
+        return elapsed_time >= duration
+
+    return action
+
+
 def animate_creation(obj: Array):
     return obj.creation
 
@@ -66,7 +92,7 @@ def move_down(obj: Array, amount: int, seconds: int):
     return EasingTransition(seconds, amount, obj, cubic_ease_in_out, (0.0, -1.0)).step
 
 
-def parallel(*actions):
+def parallel(*actions: ActionFn) -> ActionFn:
     actions = set(actions)
 
     def combined_action(delta: float):
@@ -79,12 +105,12 @@ def parallel(*actions):
     return combined_action
 
 
-def wait(seconds: float):
+def wait(duration: float) -> ActionFn:
     elapsed_time = 0.0
 
-    def waiter(delta: float):
+    def action(dt: float):
         nonlocal elapsed_time
-        elapsed_time += delta
-        return elapsed_time >= seconds
+        elapsed_time += dt
+        return elapsed_time >= duration
 
-    return waiter
+    return action
