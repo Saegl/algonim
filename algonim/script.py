@@ -51,12 +51,12 @@ class ScriptExecutor:
             self.index += 1
 
 
-def run_script(window, script_writer):
+def write_script(window, script_writer) -> ScriptExecutor:
     with Timer("script_writer"):
         script = script_writer(window)
 
     script_exec = ScriptExecutor(script)
-    script_exec.start()
+    return script_exec
 
 
 def fade_in(obj, duration=1.0, ease=ease_linear) -> ActionFn:
