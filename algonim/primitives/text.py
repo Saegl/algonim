@@ -1,6 +1,6 @@
 import pyglet
 
-from algonim.colors import Color
+from algonim.colors import TRANSPARENT, Color
 
 
 class Text:
@@ -10,6 +10,7 @@ class Text:
         self.label = pyglet.text.Label(
             text, x, y, anchor_x="center", anchor_y="center", font_size=font_size
         )
+        self.label.color = TRANSPARENT
 
     def set_color(self, color: Color):
         self.label.color = color
