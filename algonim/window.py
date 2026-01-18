@@ -8,8 +8,8 @@ from pyglet.window import key
 class AppWindow(pyglet.window.Window):
     def __init__(self, visible: bool, double_buffer: bool):
         super().__init__(
-            width=1600,
-            height=900,
+            width=1920,
+            height=1080,
             resizable=False,
             fullscreen=False,
             visible=visible,
