@@ -4,7 +4,6 @@ from algonim.primitives.hcode import HighlightedCode
 from algonim.primitives.var import Var
 from algonim.python_tracer import Snapshot, trace
 from algonim.script import Script, wait
-from algonim.window import AppWindow
 
 bubble_sort_code = """\
 arr = [3, 1, 3, 4, 6, 9, 5]
@@ -21,14 +20,14 @@ for i in reversed(range(n)):
 """
 
 
-def build_script(window: AppWindow):
+def build_script():
     script = Script()
 
     program_filepath = pathlib.Path("videoprograms/bubble_sort.py")
 
     code = HighlightedCode(program_filepath.open("rt").read(), 420, 250, 28)
     print(code.layout.content_width, code.layout.content_height)
-    window.objects.append(code)
+    script.register(code)
 
     lines = trace(program_filepath, {"arr", "swapped", "i", "j"})
 
@@ -40,7 +39,7 @@ def build_script(window: AppWindow):
     }
 
     for var in variables.values():
-        window.objects.append(var)
+        script.register(var)
 
     prev_snapshot = Snapshot({}, "", -1)
     for lineno, snapshot in lines:

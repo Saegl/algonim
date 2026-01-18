@@ -1,7 +1,7 @@
 import pyglet
 from pyglet import shapes
 
-from algonim.colors import TRANSPARENT, WHITE
+from algonim.colors import TRANSPARENT, WHITE, replace_alpha
 
 
 class Array:
@@ -124,6 +124,19 @@ class Array:
         self.move_y(delta_y)
 
     def set_color(self, color):
+        self.left_border.color = color
+        self.right_border.color = color
+        self.bottom_border.color = color
+        self.top_border.color = color
+        for line in self.inside_lines:
+            line.color = color
+
+        for entry in self.entries:
+            entry.color = color
+
+    def set_alpha(self, alpha):
+        color = replace_alpha(self.left_border.color, alpha)
+
         self.left_border.color = color
         self.right_border.color = color
         self.bottom_border.color = color

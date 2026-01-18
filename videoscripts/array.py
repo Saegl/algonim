@@ -7,17 +7,16 @@ from algonim.script import (
     move_up,
     parallel,
 )
-from algonim.window import AppWindow
 
 
-def build_script(window: AppWindow):
+def build_script():
     script = Script()
 
-    arr = Array(window.width // 2, window.height // 2, [4, 1, 2, 5, 3, 4])
-    window.objects.append(arr)
+    arr = Array(1920 // 2, 1080 // 2, [4, 1, 2, 5, 3, 4])
+    script.register(arr)
 
-    arr2 = Array(window.width // 2, window.height // 2 - 200, [1, 2, 3])
-    window.objects.append(arr2)
+    arr2 = Array(1920 // 2, 1080 // 2 - 200, [1, 2, 3])
+    script.register(arr)
 
     script.do(
         parallel(
