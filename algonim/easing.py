@@ -5,6 +5,10 @@ Easing functions from https://easings.net/
 import math
 
 
+def lerp(a: float, b: float, t: float) -> float:
+    return a + (b - a) * t
+
+
 # LINEAR
 def ease_linear(t: float) -> float:
     return t

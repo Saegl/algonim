@@ -3,7 +3,7 @@ from collections.abc import Callable
 import pyglet
 
 from algonim.colors import WHITE
-from algonim.easing import ease_in_out_cubic, ease_linear
+from algonim.easing import ease_in_out_cubic, ease_linear, lerp
 from algonim.time_utils import Timer
 
 type ActionFn = Callable[[float], bool]
@@ -91,16 +91,16 @@ def tween_xy(
     obj, start_x, start_y, end_x, end_y, duration, ease=ease_linear
 ) -> ActionFn:
     t = 0.0
-    dx = end_x - start_x
-    dy = end_y - start_y
 
     def action(dt):
         nonlocal t
         t += dt
         u = min(1.0, t / duration)
         e = ease(u)
-        obj.set_x(start_x + dx * e)
-        obj.set_y(start_y + dy * e)
+
+        obj.set_x(lerp(start_x, end_x, e))
+        obj.set_y(lerp(start_y, end_y, e))
+
         return u >= 1.0
 
     return action
