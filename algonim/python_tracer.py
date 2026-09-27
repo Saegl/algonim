@@ -82,6 +82,7 @@ def trace(filepath, watched_vars):
 if __name__ == "__main__":
     print(
         trace(
-            pathlib.Path("videoprograms/bubble_sort.py"), {"arr", "swapped", "i", "j"}
+            pathlib.Path("videoscripts/assets/bubble_sort.py"),
+            {"arr", "swapped", "i", "j"},
         )
     )

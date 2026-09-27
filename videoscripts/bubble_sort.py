@@ -21,7 +21,7 @@ for i in reversed(range(n)):
 
 
 def build_script(script: Script):
-    program_filepath = pathlib.Path("videoprograms/bubble_sort.py")
+    program_filepath = pathlib.Path("videoscripts/assets/bubble_sort.py")
 
     code = HighlightedCode(script, program_filepath.open("rt").read(), 350, 675)
 
