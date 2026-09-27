@@ -20,28 +20,47 @@ explaining algorithms and code execution step by step.
 
 # Usage
 
-Run a video script in preview mode:
+Run a video script in preview mode (press `Q` to quit):
 
 ```bash
 python -m algonim videoscripts/bubble_sort.py
 ```
 
-Render a video (work in progress):
+Render a video to a file:
 
 ```bash
-python -m algonim render videoscripts/example.py
+python -m algonim videoscripts/max_elem.py --video --headless -o max_elem.mp4
 ```
 
-Each video script must define:
+Options: `--video` renders to a file, `--headless` hides the window,
+`-o/--output` sets the path (default `output.mp4`), `--fps` sets the frame
+rate (default 60).
+
+Each video script must define a function that returns a `Script`:
 
 ```python
-def build_script(window):
-    ...
+from algonim.script import Script, fade_in
+from algonim.primitives.text import Text
+
+
+def build_script():
+    script = Script()
+    title = Text(script, 960, 540, "Hello")
+    script.do(fade_in(title))
+    return script
+```
+
+# Development
+
+```bash
+uv sync
+pytest  # needs a display: scripts are built against a hidden window
+mypy
+ruff check . && ruff format .
 ```
 
 # TODO
 
-- Headless rendering (algonim render …)
 - Resolution presets (native, fullhd, 4k)
 - Scene abstraction (window-independent scripts)
 - Pause / resume in preview mode
