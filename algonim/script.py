@@ -189,14 +189,11 @@ def defer(factory) -> ActionFn:
 
 
 def parallel(*actions: ActionFn) -> ActionFn:
-    remaining = set(actions)
+    remaining = list(actions)
 
     def combined_action(delta: float):
-        for action in list(remaining):
-            if action(delta):
-                remaining.remove(action)
-
-        return len(remaining) == 0
+        remaining[:] = [action for action in remaining if not action(delta)]
+        return not remaining
 
     return combined_action
 
