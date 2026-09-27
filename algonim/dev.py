@@ -1,7 +1,7 @@
 import pyglet
 
 from algonim.resolution import Resolution
-from algonim.script import Player
+from algonim.script import FPS, Player
 
 HEIGHT = 40
 MARGIN = 16
@@ -63,8 +63,8 @@ class Timeline:
         ]
 
     def draw(self):
-        duration = self.player.script.duration
-        u = self.player.t / duration if duration else 1.0
+        last = self.player.script.frame
+        u = self.player.frame / last if last else 1.0
         x = self.x0 + u * (self.x1 - self.x0)
         self.progress.width = x - self.x0
         self.playhead.x = x
@@ -72,7 +72,7 @@ class Timeline:
         self.play_icon.visible = not playing
         for bar in self.pause_icon:
             bar.visible = playing
-        self.label.text = f"{self.player.t:.2f} / {duration:.2f}s"
+        self.label.text = f"{self.player.frame / FPS:.2f} / {last / FPS:.2f}s"
         self.batch.draw()
 
     def hit(self, y: float) -> bool:
@@ -80,4 +80,4 @@ class Timeline:
 
     def seek_to(self, x: float):
         u = (x - self.x0) / (self.x1 - self.x0)
-        self.player.seek(u * self.player.script.duration)
+        self.player.seek(round(u * self.player.script.frame))

@@ -27,9 +27,9 @@ class Text:
             bold=bold,
         )
         self.label.color = color
-        self.x = script.track(x, self.set_x)
-        self.y = script.track(y, self.set_y)
-        self.alpha = script.track(0.0, self.set_alpha)
+        self.x = script.prop(x, self.set_x)
+        self.y = script.prop(y, self.set_y)
+        self.alpha = script.prop(0.0, self.set_alpha)
         script.register(self)
 
     def set_alpha(self, alpha):

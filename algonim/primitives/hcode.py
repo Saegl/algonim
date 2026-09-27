@@ -119,7 +119,7 @@ class HighlightedCode:
         self.cursor = Arrow(
             res, x - 125, cursor_y, x - 85, cursor_y, head_length=20, width=2.5
         )
-        self.cursor_y = script.track(cursor_y, self.cursor.set_y)
+        self.cursor_y = script.prop(cursor_y, self.cursor.set_y)
         script.register(self)
 
     def line_center(self, lineno: int) -> float:

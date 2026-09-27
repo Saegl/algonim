@@ -13,7 +13,7 @@ class Var:
             font_size=res.length(27),
         )
         self.varname = varname
-        self.value = script.track(value, self.set_value, lerp=None)
+        self.value = script.prop(value, self.set_value)
         script.register(self)
 
     def set_value(self, value):

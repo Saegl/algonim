@@ -1,6 +1,4 @@
-import math
-from collections.abc import Callable
-from dataclasses import dataclass
+from collections.abc import Callable, Iterator
 from typing import Any
 
 import pyglet
@@ -9,68 +7,36 @@ from algonim.easing import ease_in_out_cubic, ease_linear, ease_out_cubic, lerp
 from algonim.resolution import Resolution
 from algonim.time_utils import Timer
 
+FPS = 60
+
 type Easing = Callable[[float], float]
-type Lerp[T] = Callable[[T, T, float], T]
 
-# Tolerance for float sums of durations, so back to back animations don't
-# count as overlapping
-EPSILON = 1e-9
-
-
-@dataclass(frozen=True)
-class Segment[T]:
-    t0: float
-    t1: float
-    start: T
-    end: T
-    ease: Easing
+type Anim = Iterator[None]
+"""Generator that animates props while the script is written. Each `yield`
+moves to the next frame, the code after it sets the props for that frame"""
 
 
-class Track[T]:
-    """Property value as a function of time: the initial value, then
-    non-overlapping segments that ease from one value to another.
+def frames(seconds: float) -> int:
+    return round(seconds * FPS)
 
-    `apply` pushes the value to the drawn object, it runs on seek only.
-    Tracks without `lerp` (like text) can only jump between values.
-    """
 
-    def __init__(
-        self, initial: T, apply: Callable[[T], None], lerp: Lerp[T] | None = None
-    ):
-        self.initial = initial
+class Prop[T]:
+    """Animatable property: `value` is its value in the frame being written,
+    `apply` pushes a value to the drawn object when playback seeks"""
+
+    def __init__(self, value: T, apply: Callable[[T], None], frame: int):
+        self.value = value
         self.apply = apply
-        self.lerp = lerp
-        self.segments: list[Segment[T]] = []
+        # Values of the frames before the one being written, a prop made
+        # mid-script has its initial value in the frames before it
+        self.history: list[T] = [value] * frame
         self.applied: Any = _UNSET
 
-    @property
-    def end_time(self) -> float:
-        return self.segments[-1].t1 if self.segments else 0.0
+    def at(self, frame: int) -> T:
+        return self.history[frame] if frame < len(self.history) else self.value
 
-    def at(self, t: float) -> T:
-        value = self.initial
-        for seg in self.segments:
-            if t < seg.t0:
-                break
-            if t < seg.t1:
-                assert self.lerp is not None
-                u = (t - seg.t0) / (seg.t1 - seg.t0)
-                return self.lerp(seg.start, seg.end, seg.ease(u))
-            value = seg.end
-        return value
-
-    def tween(self, t0: float, duration: float, end: T, ease: Easing = ease_linear):
-        if t0 < self.end_time - EPSILON:
-            raise ValueError(
-                f"Animation at {t0:.3f}s overlaps the previous one on this track,"
-                f" which ends at {self.end_time:.3f}s"
-            )
-        if duration > 0 and self.lerp is None:
-            raise ValueError("Track can't interpolate, use set_to()")
-        self.segments.append(Segment(t0, t0 + duration, self.at(t0), end, ease))
-
-    def seek(self, t: float):
-        value = self.at(t)
+    def seek(self, frame: int):
+        value = self.at(frame)
         if value != self.applied:
             self.apply(value)
             self.applied = value
@@ -79,86 +45,77 @@ class Track[T]:
 _UNSET = object()
 
 
-@dataclass(frozen=True)
-class Anim:
-    """Animation description: `place(t0)` writes it to tracks starting at t0"""
-
-    duration: float
-    place: Callable[[float], None]
-
-
 class Script:
     def __init__(self, resolution: Resolution) -> None:
         self.resolution = resolution
         # TODO: typing
         self.actors: list[Any] = []
-        self.tracks: list[Track[Any]] = []
-        # Grows as the script is written, it is where the next play() starts
-        self.duration = 0.0
+        self.props: list[Prop[Any]] = []
+        # Frame being written, after writing it is the last frame
+        self.frame = 0
+
+    @property
+    def duration(self) -> float:
+        return self.frame / FPS
 
     def register(self, actor):
         self.actors.append(actor)
 
-    def track[T](
-        self, initial: T, apply: Callable[[T], None], lerp: Lerp[Any] | None = lerp
-    ) -> Track[T]:
-        track = Track(initial, apply, lerp)
-        self.tracks.append(track)
-        return track
+    def prop[T](self, value: T, apply: Callable[[T], None]) -> Prop[T]:
+        prop = Prop(value, apply, self.frame)
+        self.props.append(prop)
+        return prop
 
     def play(self, *anims: Anim):
-        anim = par(*anims)
-        anim.place(self.duration)
-        self.duration += anim.duration
+        for _ in par(*anims):
+            for prop in self.props:
+                prop.history.append(prop.value)
+            self.frame += 1
 
     def wait(self, seconds: float):
-        self.duration += seconds
+        self.play(wait(seconds))
 
-    def seek(self, t: float):
-        for track in self.tracks:
-            track.seek(t)
+    def seek(self, frame: int):
+        for prop in self.props:
+            prop.seek(frame)
 
 
 class Player:
-    """Plays a script in real time on the pyglet clock"""
+    """Plays a script one frame per tick, slow drawing slows it down instead
+    of skipping frames"""
 
     def __init__(self, script: Script):
         self.script = script
-        self.t = 0.0
+        self.frame = 0
         self.paused = False
 
     @property
     def finished(self) -> bool:
-        return self.t >= self.script.duration
+        return self.frame >= self.script.frame
 
     def start(self):
-        pyglet.clock.schedule(self.tick)
+        pyglet.clock.schedule_interval(self.tick, 1 / FPS)
 
     def stop(self):
         pyglet.clock.unschedule(self.tick)
 
     def toggle_pause(self):
         if self.finished:
-            self.seek(0.0)
+            self.seek(0)
             self.paused = False
         else:
             self.paused = not self.paused
 
-    def seek(self, t: float):
-        self.t = min(max(t, 0.0), self.script.duration)
-        self.script.seek(self.t)
+    def seek(self, frame: int):
+        self.frame = min(max(frame, 0), self.script.frame)
+        self.script.seek(self.frame)
 
     def tick(self, dt: float):
         if self.paused or self.finished:
             return
-        self.seek(self.t + dt)
+        self.seek(self.frame + 1)
         if self.finished:
             print("Script complete")
-
-
-def frame_count(duration: float, fps: int) -> int:
-    """Frames at 0, 1/fps, ..., the last one at or after the end"""
-    return math.ceil(duration * fps - EPSILON) + 1
 
 
 def write_script(window, script_writer) -> Script:
@@ -171,40 +128,42 @@ def write_script(window, script_writer) -> Script:
     return script
 
 
-def tween[T](track: Track[T], end: T, duration: float, ease=ease_linear) -> Anim:
-    return Anim(duration, lambda t0: track.tween(t0, duration, end, ease))
+def tween(prop: Prop[float], end: float, duration: float, ease=ease_linear) -> Anim:
+    start = prop.value
+    n = frames(duration)
+    for i in range(1, n + 1):
+        yield
+        prop.value = lerp(start, end, ease(i / n))
+    # Exact end value, and the jump for zero duration
+    prop.value = end
 
 
-def tween_by(track: Track[float], delta: float, duration: float, ease=ease_linear):
-    """Tween relative to the value the track has when the animation starts"""
-    return Anim(
-        duration, lambda t0: track.tween(t0, duration, track.at(t0) + delta, ease)
-    )
+def tween_by(prop: Prop[float], delta: float, duration: float, ease=ease_linear):
+    yield from tween(prop, prop.value + delta, duration, ease)
 
 
-def set_to[T](track: Track[T], value: T) -> Anim:
-    return Anim(0.0, lambda t0: track.tween(t0, 0.0, value))
+def set_to[T](prop: Prop[T], value: T) -> Anim:
+    prop.value = value
+    yield from ()
 
 
-def wait(duration: float) -> Anim:
-    return Anim(duration, lambda t0: None)
+def wait(seconds: float) -> Anim:
+    for _ in range(frames(seconds)):
+        yield
 
 
 def seq(*anims: Anim) -> Anim:
-    def place(t0: float):
-        for anim in anims:
-            anim.place(t0)
-            t0 += anim.duration
-
-    return Anim(sum(anim.duration for anim in anims), place)
+    for anim in anims:
+        yield from anim
 
 
 def par(*anims: Anim) -> Anim:
-    def place(t0: float):
-        for anim in anims:
-            anim.place(t0)
+    running = list(anims)
+    while running := [anim for anim in running if next(anim, _DONE) is not _DONE]:
+        yield
 
-    return Anim(max((anim.duration for anim in anims), default=0.0), place)
+
+_DONE = object()
 
 
 def delay(seconds: float, anim: Anim) -> Anim:

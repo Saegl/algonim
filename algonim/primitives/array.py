@@ -49,9 +49,9 @@ class Array:
 
         self._x = x
         self._y = y
-        self.x = script.track(x, self.set_x)
-        self.y = script.track(y, self.set_y)
-        self.alpha = script.track(0.0, self.set_alpha)
+        self.x = script.prop(x, self.set_x)
+        self.y = script.prop(y, self.set_y)
+        self.alpha = script.prop(0.0, self.set_alpha)
         script.register(self)
 
     def layout(self):
