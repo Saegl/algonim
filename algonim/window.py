@@ -9,6 +9,28 @@ from algonim.resolution import Resolution
 from algonim.script import Player
 
 
+def _use_unhinted_advances():
+    """FreeType hints glyph advances to whole pixels, so text width drifts by a
+    few percent between resolutions. Unhinted advances scale exactly, and
+    pyglet still rounds every glyph quad to the pixel grid, keeping it crisp.
+    """
+    if not pyglet.compat_platform.startswith("linux"):
+        return
+
+    from pyglet.font.freetype import FreeTypeGlyphRenderer
+
+    get_glyph_metrics = FreeTypeGlyphRenderer._get_glyph_metrics
+
+    def get_unhinted_glyph_metrics(self):
+        get_glyph_metrics(self)
+        self._advance_x = self._glyph_slot.linearHoriAdvance / 65536
+
+    FreeTypeGlyphRenderer._get_glyph_metrics = get_unhinted_glyph_metrics  # type: ignore[method-assign]
+
+
+_use_unhinted_advances()
+
+
 class AppWindow(pyglet.window.Window):
     def __init__(self, resolution: Resolution, visible: bool):
         super().__init__(

@@ -20,23 +20,24 @@ explaining algorithms and code execution step by step.
 
 # Usage
 
-Run a video script in preview mode (`Space` pauses, `F3` toggles dev mode
+`uv sync` installs the `algonim` command.
+
+Preview a video script in a window (`Space` pauses, `F3` toggles dev mode
 with a seekable timeline, `Q` quits):
 
 ```bash
-python -m algonim videoscripts/bubble_sort.py
+algonim videoscripts/bubble_sort.py  # same as: algonim preview ...
 ```
 
-Render a video to a file:
+Render a video to a file, headless (no window or display needed):
 
 ```bash
-python -m algonim videoscripts/max_elem.py --video --headless -o max_elem.mp4
+algonim video videoscripts/max_elem.py  # -> output/max_elem-1080p.mp4
 ```
 
-Options: `--video` renders to a file, `--headless` hides the window,
-`-o/--output` sets the path (default `output.mp4`), `-r/--resolution` picks
-a 16:9 preset: `720p`, `900p`, `1080p` (default), `1440p`, `4k`. Videos are
-60 fps.
+`-r/--resolution` picks a 16:9 preset for either mode: `720p`, `900p`
+(preview default), `1080p` (video default), `1440p`, `4k`. `-o/--output`
+overrides the video path. Videos are 60 fps.
 
 Each video script must define a function that fills the given `Script`.
 Scripts always use a virtual 1600x900 canvas, `(0, 0)` is the bottom left
@@ -65,7 +66,6 @@ ruff check . && ruff format .
 # TODO
 
 - Scene abstraction (window-independent scripts)
-- Pause / resume in preview mode
 - Array index highlighting
 - Variable update animations
 - Code line highlighting improvements
