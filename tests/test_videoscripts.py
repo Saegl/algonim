@@ -1,17 +1,16 @@
 import importlib
 from pathlib import Path
 
+import pytest
 
-def get_videoscript_modules():
-    videoscripts_dir = Path(__file__).parent.parent / "videoscripts"
-    for path in videoscripts_dir.glob("*.py"):
-        if path.name.startswith("_"):
-            continue
-        yield path.stem
+VIDEOSCRIPTS_DIR = Path(__file__).parent.parent / "videoscripts"
+MODULE_NAMES = sorted(
+    path.stem for path in VIDEOSCRIPTS_DIR.glob("*.py") if not path.name.startswith("_")
+)
 
 
-def test_build_script():
-    for module_name in get_videoscript_modules():
-        module = importlib.import_module(f"videoscripts.{module_name}")
-        script = module.build_script()
-        assert script is not None
+@pytest.mark.parametrize("module_name", MODULE_NAMES)
+def test_build_script(window, module_name):
+    module = importlib.import_module(f"videoscripts.{module_name}")
+    script = module.build_script()
+    assert script.steps
