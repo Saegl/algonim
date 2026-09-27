@@ -18,9 +18,6 @@ class AppWindow(pyglet.window.Window):
         # TODO: improve typing later
         self.objects: list[Any] = []
 
-    def update(self, delta: float):
-        print(delta)
-
     def on_draw(self):
         self.clear()
         for object in self.objects:
