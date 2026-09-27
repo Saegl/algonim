@@ -16,7 +16,7 @@ def build_script():
     script.register(arr)
 
     arr2 = Array(1920 // 2, 1080 // 2 - 200, [1, 2, 3])
-    script.register(arr)
+    script.register(arr2)
 
     script.do(
         parallel(
