@@ -1,7 +1,7 @@
 import pyglet
 from pyglet.customtypes import AnchorX, AnchorY
 
-from algonim.colors import WHITE, Color, replace_alpha
+from algonim.colors import WHITE, replace_alpha
 from algonim.script import Script
 
 
@@ -27,23 +27,18 @@ class Text:
             bold=bold,
         )
         self.label.color = color
-        self.set_x(x)
-        self.set_y(y)
-        self.set_alpha(0)
+        self.x = script.track(x, self.set_x)
+        self.y = script.track(y, self.set_y)
+        self.alpha = script.track(0.0, self.set_alpha)
         script.register(self)
 
-    def set_color(self, color: Color):
-        self.label.color = color
-
     def set_alpha(self, alpha):
-        self.label.color = replace_alpha(self.label.color, alpha)
+        self.label.color = replace_alpha(self.label.color, int(alpha))
 
     def set_x(self, x):
-        self.x = x
         self.label.x = self.resolution.pixel(x)
 
     def set_y(self, y):
-        self.y = y
         self.label.y = self.resolution.pixel(y)
 
     def draw(self):

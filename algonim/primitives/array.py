@@ -1,7 +1,7 @@
 import pyglet
 from pyglet import shapes
 
-from algonim.colors import TRANSPARENT, WHITE, replace_alpha
+from algonim.colors import WHITE, replace_alpha
 from algonim.script import Script
 
 
@@ -47,16 +47,17 @@ class Array:
             for number in data
         ]
 
-        self.x = x
-        self.y = y
-        self.layout()
-        self.set_color(TRANSPARENT)
+        self._x = x
+        self._y = y
+        self.x = script.track(x, self.set_x)
+        self.y = script.track(y, self.set_y)
+        self.alpha = script.track(0.0, self.set_alpha)
         script.register(self)
 
     def layout(self):
         res = self.resolution
-        left = self.x - len(self.data) * self.entry_size / 2
-        bottom = self.y - self.entry_size / 2
+        left = self._x - len(self.data) * self.entry_size / 2
+        bottom = self._y - self.entry_size / 2
 
         for line, (x1, y1, x2, y2) in zip(self.lines, self.segments, strict=True):
             line.position = (res.length(left + x1), res.length(bottom + y1))
@@ -66,7 +67,7 @@ class Array:
         for i, entry in enumerate(self.entries):
             entry.position = (
                 res.pixel(left + self.entry_size * (i + 0.5)),
-                res.pixel(self.y),
+                res.pixel(self._y),
                 0,
             )
 
@@ -78,11 +79,11 @@ class Array:
             entry.draw()
 
     def set_x(self, x):
-        self.x = x
+        self._x = x
         self.layout()
 
     def set_y(self, y):
-        self.y = y
+        self._y = y
         self.layout()
 
     def set_color(self, color):
@@ -93,4 +94,4 @@ class Array:
             entry.color = color
 
     def set_alpha(self, alpha):
-        self.set_color(replace_alpha(self.lines[0].color, alpha))
+        self.set_color(replace_alpha(WHITE, int(alpha)))

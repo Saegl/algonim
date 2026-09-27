@@ -16,4 +16,4 @@ def test_build_script(window, module_name):
     module = importlib.import_module(f"videoscripts.{module_name}")
     script = Script(window.resolution)
     module.build_script(script)
-    assert script.steps
+    assert script.duration > 0

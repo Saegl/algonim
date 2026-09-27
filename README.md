@@ -49,7 +49,7 @@ from algonim.primitives.text import Text
 
 def build_script(script: Script):
     title = Text(script, 800, 450, "Hello")
-    script.do(fade_in(title))
+    script.play(fade_in(title))
 ```
 
 # Development

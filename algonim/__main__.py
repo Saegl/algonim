@@ -8,7 +8,7 @@ from pyglet import gl
 from pyglet.math import Mat4
 
 from algonim.resolution import RESOLUTIONS, Resolution
-from algonim.script import ScriptExecutor, write_script
+from algonim.script import Player, Script, frame_count, write_script
 from algonim.time_utils import Timer
 from algonim.window import AppWindow
 
@@ -28,18 +28,17 @@ def load_script(path: Path):
     return module.build_script
 
 
-def exec_preview(script_exec: ScriptExecutor):
-    script_exec.start()
+def exec_preview(script: Script):
+    Player(script).start()
     pyglet.app.run()
 
 
 def exec_video_renderer(
     window: AppWindow,
-    script_exec: ScriptExecutor,
+    script: Script,
     target_fps: int,
     output: Path,
 ):
-    fixed_dt = 1 / target_fps
     width, height = window.resolution.width, window.resolution.height
     # macro_block_size=8 keeps 1080p unpadded (default 16 resizes it to 1088)
     writer = imageio.get_writer(
@@ -55,8 +54,8 @@ def exec_video_renderer(
     frame = np.empty((height, width, 4), dtype=np.uint8)
 
     with Timer("render_frames"):
-        while not script_exec.is_complete():
-            script_exec.execute_current_action(fixed_dt)
+        for i in range(frame_count(script.duration, target_fps)):
+            script.seek(i / target_fps)
 
             window.dispatch_events()
             framebuffer.bind()
@@ -119,9 +118,9 @@ if __name__ == "__main__":
     window = AppWindow(resolution, visible=not args.headless)  # type: ignore[abstract]
     build_script = load_script(Path(args.script))
 
-    script_exec = write_script(window, build_script)
+    script = write_script(window, build_script)
 
     if not args.video:
-        exec_preview(script_exec)
+        exec_preview(script)
     else:
-        exec_video_renderer(window, script_exec, args.fps, args.output)
+        exec_video_renderer(window, script, args.fps, args.output)

@@ -1,4 +1,7 @@
+import math
 from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
 import pyglet
 
@@ -6,221 +9,240 @@ from algonim.easing import ease_in_out_cubic, ease_linear, ease_out_cubic, lerp
 from algonim.resolution import Resolution
 from algonim.time_utils import Timer
 
-type ActionFn = Callable[[float], bool]
-"""Represents an animated action
+type Easing = Callable[[float], float]
+type Lerp[T] = Callable[[T, T, float], T]
 
-Args:
-    value (float): Delta time (in seconds) since the last call
+# Tolerance for float sums of durations, so back to back animations don't
+# count as overlapping
+EPSILON = 1e-9
 
-Returns:
-    bool: True if the animation is completed, False otherwise
-"""
+
+@dataclass(frozen=True)
+class Segment[T]:
+    t0: float
+    t1: float
+    start: T
+    end: T
+    ease: Easing
+
+
+class Track[T]:
+    """Property value as a function of time: the initial value, then
+    non-overlapping segments that ease from one value to another.
+
+    `apply` pushes the value to the drawn object, it runs on seek only.
+    Tracks without `lerp` (like text) can only jump between values.
+    """
+
+    def __init__(
+        self, initial: T, apply: Callable[[T], None], lerp: Lerp[T] | None = None
+    ):
+        self.initial = initial
+        self.apply = apply
+        self.lerp = lerp
+        self.segments: list[Segment[T]] = []
+        self.applied: Any = _UNSET
+
+    @property
+    def end_time(self) -> float:
+        return self.segments[-1].t1 if self.segments else 0.0
+
+    def at(self, t: float) -> T:
+        value = self.initial
+        for seg in self.segments:
+            if t < seg.t0:
+                break
+            if t < seg.t1:
+                assert self.lerp is not None
+                u = (t - seg.t0) / (seg.t1 - seg.t0)
+                return self.lerp(seg.start, seg.end, seg.ease(u))
+            value = seg.end
+        return value
+
+    def tween(self, t0: float, duration: float, end: T, ease: Easing = ease_linear):
+        if t0 < self.end_time - EPSILON:
+            raise ValueError(
+                f"Animation at {t0:.3f}s overlaps the previous one on this track,"
+                f" which ends at {self.end_time:.3f}s"
+            )
+        if duration > 0 and self.lerp is None:
+            raise ValueError("Track can't interpolate, use set_to()")
+        self.segments.append(Segment(t0, t0 + duration, self.at(t0), end, ease))
+
+    def seek(self, t: float):
+        value = self.at(t)
+        if value != self.applied:
+            self.apply(value)
+            self.applied = value
+
+
+_UNSET = object()
+
+
+@dataclass(frozen=True)
+class Anim:
+    """Animation description: `place(t0)` writes it to tracks starting at t0"""
+
+    duration: float
+    place: Callable[[float], None]
 
 
 class Script:
     def __init__(self, resolution: Resolution) -> None:
         self.resolution = resolution
-        self.steps: list[ActionFn] = []
         # TODO: typing
-        self.actors = []  # type: ignore
-
-    def do(self, *actions: ActionFn):
-        if len(actions) == 1:
-            self.steps.append(actions[0])
-        else:
-            self.steps.append(parallel(*actions))
+        self.actors: list[Any] = []
+        self.tracks: list[Track[Any]] = []
+        # Grows as the script is written, it is where the next play() starts
+        self.duration = 0.0
 
     def register(self, actor):
         self.actors.append(actor)
 
+    def track[T](
+        self, initial: T, apply: Callable[[T], None], lerp: Lerp[Any] | None = lerp
+    ) -> Track[T]:
+        track = Track(initial, apply, lerp)
+        self.tracks.append(track)
+        return track
 
-class ScriptExecutor:
+    def play(self, *anims: Anim):
+        anim = par(*anims)
+        anim.place(self.duration)
+        self.duration += anim.duration
+
+    def wait(self, seconds: float):
+        self.duration += seconds
+
+    def seek(self, t: float):
+        for track in self.tracks:
+            track.seek(t)
+
+
+class Player:
+    """Plays a script in real time on the pyglet clock"""
+
     def __init__(self, script: Script):
         self.script = script
-        self.index = 0
+        self.t = 0.0
 
     def start(self):
-        pyglet.clock.schedule(self.execute_current_action)
+        pyglet.clock.schedule(self.tick)
 
     def stop(self):
-        pyglet.clock.unschedule(self.execute_current_action)
+        pyglet.clock.unschedule(self.tick)
 
-    def is_complete(self):
-        return self.index >= len(self.script.steps)
-
-    def execute_current_action(self, delta: float):
-        if self.is_complete():
+    def tick(self, dt: float):
+        self.t = min(self.t + dt, self.script.duration)
+        self.script.seek(self.t)
+        if self.t >= self.script.duration:
             self.stop()
             print("Script complete")
-            return
-
-        action = self.script.steps[self.index]
-        is_action_complete = action(delta)
-        if is_action_complete:
-            self.index += 1
 
 
-def write_script(window, script_writer) -> ScriptExecutor:
+def frame_count(duration: float, fps: int) -> int:
+    """Frames at 0, 1/fps, ..., the last one at or after the end"""
+    return math.ceil(duration * fps - EPSILON) + 1
+
+
+def write_script(window, script_writer) -> Script:
     script = Script(window.resolution)
     with Timer("script_writer"):
         script_writer(script)
 
+    script.seek(0)
     window.objects.extend(script.actors)
-    script_exec = ScriptExecutor(script)
-    return script_exec
+    return script
 
 
-def fade_in(obj, duration=1.0, ease=ease_linear) -> ActionFn:
-    elapsed = 0.0
-
-    def action(dt):
-        nonlocal elapsed
-        elapsed += dt
-        u = min(1.0, elapsed / duration)
-        a = int(255 * ease(u))
-        obj.set_alpha(a)
-        return u >= 1.0
-
-    return action
+def tween[T](track: Track[T], end: T, duration: float, ease=ease_linear) -> Anim:
+    return Anim(duration, lambda t0: track.tween(t0, duration, end, ease))
 
 
-def grow_in(obj, height=50, duration=0.5, ease=ease_linear) -> ActionFn:
-    elapsed = 0.0
-
-    def action(dt):
-        nonlocal elapsed
-        elapsed += dt
-        u = min(1.0, elapsed / duration)
-        obj.set_height(height * ease(u))
-        return u >= 1.0
-
-    return action
-
-
-def grow_out(obj, height=50, duration=0.5, ease=ease_linear) -> ActionFn:
-    elapsed = 0.0
-
-    def action(dt):
-        nonlocal elapsed
-        elapsed += dt
-        u = min(1.0, elapsed / duration)
-        obj.set_height(height * (1.0 - ease(u)))
-        return u >= 1.0
-
-    return action
-
-
-def drop_in(obj) -> ActionFn:
-    return parallel(
-        fade_in(obj),
-        move_down(obj, 80, 1, ease=ease_out_cubic),
+def tween_by(track: Track[float], delta: float, duration: float, ease=ease_linear):
+    """Tween relative to the value the track has when the animation starts"""
+    return Anim(
+        duration, lambda t0: track.tween(t0, duration, track.at(t0) + delta, ease)
     )
 
 
-def drop_out(obj) -> ActionFn:
-    return parallel(
+def set_to[T](track: Track[T], value: T) -> Anim:
+    return Anim(0.0, lambda t0: track.tween(t0, 0.0, value))
+
+
+def wait(duration: float) -> Anim:
+    return Anim(duration, lambda t0: None)
+
+
+def seq(*anims: Anim) -> Anim:
+    def place(t0: float):
+        for anim in anims:
+            anim.place(t0)
+            t0 += anim.duration
+
+    return Anim(sum(anim.duration for anim in anims), place)
+
+
+def par(*anims: Anim) -> Anim:
+    def place(t0: float):
+        for anim in anims:
+            anim.place(t0)
+
+    return Anim(max((anim.duration for anim in anims), default=0.0), place)
+
+
+def delay(seconds: float, anim: Anim) -> Anim:
+    return seq(wait(seconds), anim)
+
+
+def stagger(seconds: float, *anims: Anim) -> Anim:
+    """Start each animation `seconds` after the previous one started"""
+    return par(*(delay(i * seconds, anim) for i, anim in enumerate(anims)))
+
+
+def fade_in(obj, duration=1.0, ease=ease_linear) -> Anim:
+    return tween(obj.alpha, 255, duration, ease)
+
+
+def fade_out(obj, duration=1.0, ease=ease_linear) -> Anim:
+    return tween(obj.alpha, 0, duration, ease)
+
+
+def grow_in(obj, height=50, duration=0.5, ease=ease_linear) -> Anim:
+    return tween(obj.height, height, duration, ease)
+
+
+def grow_out(obj, duration=0.5, ease=ease_linear) -> Anim:
+    return tween(obj.height, 0, duration, ease)
+
+
+def move_to(obj, x, y, duration=1.0, ease=ease_linear) -> Anim:
+    return par(tween(obj.x, x, duration, ease), tween(obj.y, y, duration, ease))
+
+
+def move_by(obj, dx, dy, duration=1.0, ease=ease_linear) -> Anim:
+    # Untouched axes stay free for other animations
+    return par(
+        wait(duration),
+        *([tween_by(obj.x, dx, duration, ease)] if dx else []),
+        *([tween_by(obj.y, dy, duration, ease)] if dy else []),
+    )
+
+
+def move_up(obj, amount, duration=1.0, ease=ease_in_out_cubic) -> Anim:
+    return move_by(obj, 0, amount, duration, ease)
+
+
+def move_down(obj, amount, duration=1.0, ease=ease_in_out_cubic) -> Anim:
+    return move_by(obj, 0, -amount, duration, ease)
+
+
+def drop_in(obj) -> Anim:
+    return par(fade_in(obj), move_down(obj, 80, 1, ease=ease_out_cubic))
+
+
+def drop_out(obj) -> Anim:
+    return par(
         fade_out(obj, ease=ease_out_cubic),
         move_down(obj, 80, 1, ease=ease_out_cubic),
     )
-
-
-def fade_out(obj, duration=1.0, ease=ease_linear) -> ActionFn:
-    elapsed = 0.0
-
-    def action(dt):
-        nonlocal elapsed
-        elapsed += dt
-        u = min(1.0, elapsed / duration)
-        a = int(255 * (1.0 - ease(u)))
-        obj.set_alpha(a)
-        return u >= 1.0
-
-    return action
-
-
-def tween_xy(
-    obj, start_x, start_y, end_x, end_y, duration, ease=ease_linear
-) -> ActionFn:
-    t = 0.0
-
-    def action(dt):
-        nonlocal t
-        t += dt
-        u = min(1.0, t / duration)
-        e = ease(u)
-
-        obj.set_x(lerp(start_x, end_x, e))
-        obj.set_y(lerp(start_y, end_y, e))
-
-        return u >= 1.0
-
-    return action
-
-
-def move_to(obj, x, y, duration, ease=ease_linear) -> ActionFn:
-    start_x = obj.x
-    start_y = obj.y
-    return tween_xy(obj, start_x, start_y, x, y, duration, ease)
-
-
-def move_by(obj, dx, dy, duration, ease=ease_linear) -> ActionFn:
-    return defer(lambda: move_to(obj, obj.x + dx, obj.y + dy, duration, ease))
-
-
-def move_up(obj, amount, seconds, ease=ease_in_out_cubic) -> ActionFn:
-    return move_by(obj, 0, amount, seconds, ease)
-
-
-def move_down(obj, amount, seconds, ease=ease_in_out_cubic) -> ActionFn:
-    return move_by(obj, 0, -amount, seconds, ease)
-
-
-def defer(factory) -> ActionFn:
-    "Late binding"
-
-    action = None
-
-    def run(dt):
-        nonlocal action
-        if action is None:
-            action = factory()
-        return action(dt)
-
-    return run
-
-
-def parallel(*actions: ActionFn) -> ActionFn:
-    remaining = list(actions)
-
-    def combined_action(delta: float):
-        remaining[:] = [action for action in remaining if not action(delta)]
-        return not remaining
-
-    return combined_action
-
-
-def seq(*actions: ActionFn) -> ActionFn:
-    index = 0
-
-    def combined_action(dt: float):
-        nonlocal index
-
-        current_action = actions[index]
-        is_complete = current_action(dt)
-        if is_complete:
-            index += 1
-
-        return index >= len(actions)
-
-    return combined_action
-
-
-def wait(duration: float) -> ActionFn:
-    elapsed_time = 0.0
-
-    def action(dt: float):
-        nonlocal elapsed_time
-        elapsed_time += dt
-        return elapsed_time >= duration
-
-    return action

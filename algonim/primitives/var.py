@@ -1,6 +1,6 @@
 import pyglet
 
-from algonim.script import Script
+from algonim.script import Anim, Script, set_to
 
 
 class Var:
@@ -13,14 +13,14 @@ class Var:
             font_size=res.length(27),
         )
         self.varname = varname
+        self.value = script.track(value, self.set_value, lerp=None)
         script.register(self)
 
-    def update_val(self, value):
-        def update(delta):
-            self.label.text = f"{self.varname} = {value}"
-            return True
+    def set_value(self, value):
+        self.label.text = f"{self.varname} = {value}"
 
-        return update
+    def update_val(self, value) -> Anim:
+        return set_to(self.value, value)
 
     def draw(self):
         self.label.draw()

@@ -15,6 +15,7 @@ class HighlightBox:
             self.resolution.length(height),
             color=(255, 179, 67, 255),
         )
+        self.height = script.track(height, self.set_height)
         script.register(self)
 
     def set_height(self, height):

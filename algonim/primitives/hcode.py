@@ -7,7 +7,7 @@ from pygments.token import Token
 
 from algonim.easing import ease_in_out_cubic
 from algonim.primitives.arrow import Arrow
-from algonim.script import ActionFn, Script, defer, move_to
+from algonim.script import Anim, Script, tween
 
 FONT_NAME = "FiraCode Nerd Font Mono"
 
@@ -119,17 +119,14 @@ class HighlightedCode:
         self.cursor = Arrow(
             res, x - 125, cursor_y, x - 85, cursor_y, head_length=20, width=2.5
         )
+        self.cursor_y = script.track(cursor_y, self.cursor.set_y)
         script.register(self)
 
     def line_center(self, lineno: int) -> float:
         return self.y - (lineno - 0.5) * self.line_height
 
-    def hl(self, lineno: int, line) -> ActionFn:
-        def make():
-            y = self.line_center(lineno)
-            return move_to(self.cursor, self.cursor.x, y, 0.5, ease_in_out_cubic)
-
-        return defer(make)
+    def hl(self, lineno: int, line) -> Anim:
+        return tween(self.cursor_y, self.line_center(lineno), 0.5, ease_in_out_cubic)
 
     def draw(self):
         self.batch.draw()

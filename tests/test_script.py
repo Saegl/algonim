@@ -2,80 +2,101 @@ import pytest
 
 from algonim import easing
 from algonim.resolution import Resolution
-from algonim.script import Script, ScriptExecutor, fade_in, move_by, parallel, seq, wait
+from algonim.script import (
+    Script,
+    delay,
+    fade_in,
+    frame_count,
+    move_by,
+    move_down,
+    move_up,
+    par,
+    seq,
+    set_to,
+    stagger,
+    tween,
+    wait,
+)
 
 
 class Dummy:
-    def __init__(self):
-        self.x = 0.0
-        self.y = 0.0
-        self.alpha = 0
-
-    def set_x(self, x):
-        self.x = x
-
-    def set_y(self, y):
-        self.y = y
-
-    def set_alpha(self, alpha):
-        self.alpha = alpha
+    def __init__(self, script: Script):
+        self.drawn: dict[str, float] = {}
+        self.x = script.track(0.0, lambda v: self.drawn.__setitem__("x", v))
+        self.y = script.track(0.0, lambda v: self.drawn.__setitem__("y", v))
+        self.alpha = script.track(0.0, lambda v: self.drawn.__setitem__("alpha", v))
 
 
-def run(action, dt=0.1, max_frames=1000) -> int:
-    for frame in range(1, max_frames + 1):
-        if action(dt):
-            return frame
-    raise AssertionError("action never completed")
+@pytest.fixture
+def script():
+    return Script(Resolution.preset("1080p"))
 
 
-def test_wait():
-    assert run(wait(1.0), dt=0.25) == 4
+def test_durations_compose(script):
+    assert seq(wait(0.2), wait(0.3)).duration == pytest.approx(0.5)
+    assert par(wait(0.2), wait(0.5)).duration == pytest.approx(0.5)
+    assert delay(1.0, wait(0.5)).duration == pytest.approx(1.5)
+    assert stagger(0.2, wait(1.0), wait(1.0), wait(1.0)).duration == pytest.approx(1.4)
 
 
-def test_fade_in_reaches_full_alpha():
-    obj = Dummy()
-    run(fade_in(obj, duration=0.5))
-    assert obj.alpha == 255
+def test_play_and_wait_advance_script(script):
+    obj = Dummy(script)
+    script.play(fade_in(obj, duration=0.5), wait(1.0))
+    script.wait(0.25)
+    script.play(move_by(obj, 5, 0, duration=0.5))
+    assert script.duration == pytest.approx(1.75)
 
 
-def test_move_by_uses_position_at_start_time():
-    obj = Dummy()
-    step = move_by(obj, 10, -5, duration=0.3)
-    obj.x = 100  # moved after the action was created
-    run(step)
-    assert (obj.x, obj.y) == pytest.approx((110, -5))
+def test_seek_samples_any_time(script):
+    obj = Dummy(script)
+    script.play(fade_in(obj, duration=1.0))
+    script.seek(0.5)
+    assert obj.drawn["alpha"] == pytest.approx(127.5)
+    script.seek(2.0)
+    assert obj.drawn["alpha"] == 255
+    script.seek(0.0)  # backwards
+    assert obj.drawn["alpha"] == 0
 
 
-def test_parallel_runs_in_given_order():
-    calls = []
-
-    def recorder(name):
-        return lambda dt: calls.append(name) or True
-
-    run(parallel(recorder("a"), recorder("b"), recorder("c")))
-    assert calls == ["a", "b", "c"]
-
-
-def test_parallel_waits_for_longest():
-    assert run(parallel(wait(0.2), wait(0.5)), dt=0.1) == 5
+def test_move_by_starts_from_position_at_its_start_time(script):
+    obj = Dummy(script)
+    script.play(move_up(obj, 170, duration=1.0))
+    script.play(move_down(obj, 170, duration=1.0))
+    assert obj.y.at(1.0) == pytest.approx(170)
+    assert obj.y.at(1.5) == pytest.approx(85)
+    assert obj.y.at(2.0) == pytest.approx(0)
 
 
-def test_seq_runs_one_after_another():
-    assert run(seq(wait(0.2), wait(0.3)), dt=0.1) == 5
+def test_move_by_leaves_untouched_axis_free(script):
+    obj = Dummy(script)
+    script.play(move_by(obj, 0, 10), move_by(obj, 10, 0))
+    assert (obj.x.at(1.0), obj.y.at(1.0)) == pytest.approx((10, 10))
 
 
-def test_executor_runs_all_steps():
-    obj = Dummy()
-    script = Script(Resolution.preset("1080p"))
-    script.do(fade_in(obj, duration=0.2))
-    script.do(move_by(obj, 5, 0, duration=0.2), wait(0.1))
+def test_overlapping_animations_on_one_track_fail(script):
+    obj = Dummy(script)
+    with pytest.raises(ValueError, match="overlaps"):
+        script.play(fade_in(obj, duration=1.0), delay(0.5, fade_in(obj)))
 
-    executor = ScriptExecutor(script)
-    while not executor.is_complete():
-        executor.execute_current_action(0.1)
 
-    assert obj.alpha == 255
-    assert obj.x == pytest.approx(5)
+def test_back_to_back_animations_dont_overlap(script):
+    obj = Dummy(script)
+    script.play(seq(*[tween(obj.x, i, duration=0.1) for i in range(1, 11)]))
+    assert obj.x.at(1.0) == pytest.approx(10)
+
+
+def test_set_to_jumps_without_interpolation(script):
+    text = script.track("a", lambda v: None, lerp=None)
+    script.play(set_to(text, "b"))
+    assert text.at(0.0) == "b"
+    with pytest.raises(ValueError, match="interpolate"):
+        script.play(tween(text, "c", duration=1.0))
+
+
+def test_frame_count_covers_whole_duration():
+    assert frame_count(1.0, 60) == 61
+    assert frame_count(10 * 0.25, 60) == 151
+    assert frame_count(0.0, 60) == 1
 
 
 @pytest.mark.parametrize(

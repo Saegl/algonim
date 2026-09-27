@@ -3,7 +3,7 @@ import pathlib
 from algonim.primitives.hcode import HighlightedCode
 from algonim.primitives.var import Var
 from algonim.python_tracer import Snapshot, trace
-from algonim.script import Script, wait
+from algonim.script import Script
 
 bubble_sort_code = """\
 arr = [3, 1, 3, 4, 6, 9, 5]
@@ -39,15 +39,15 @@ def build_script(script: Script):
         new_vars, changed = snapshot.diff(prev_snapshot)
         print(new_vars, changed)
 
-        script.do(code.hl(lineno, snapshot.line))
+        script.play(code.hl(lineno, snapshot.line))
         prev_snapshot = snapshot
 
         for varname in new_vars:
             value = snapshot.vars[varname]
-            script.do(variables[varname].update_val(value))
+            script.play(variables[varname].update_val(value))
             print(f"NEW VAR {varname} = {value}")
 
         for varname in changed:
-            script.do(variables[varname].update_val(changed[varname].to))
+            script.play(variables[varname].update_val(changed[varname].to))
 
-        script.do(wait(2))
+        script.wait(2)

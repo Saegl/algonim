@@ -1,5 +1,5 @@
 from algonim.colors import GREY, WHITE
-from algonim.easing import ease_in_out_cubic, ease_out_cubic
+from algonim.easing import ease_in_out_cubic
 from algonim.primitives.hbox import HighlightBox
 from algonim.primitives.hcode import HighlightedCode
 from algonim.primitives.text import Text
@@ -7,13 +7,9 @@ from algonim.script import (
     Script,
     drop_in,
     drop_out,
-    fade_in,
     grow_in,
     grow_out,
-    move_down,
-    parallel,
-    seq,
-    wait,
+    stagger,
 )
 
 # NOTE: `###` in docstrings is narration
@@ -63,10 +59,7 @@ def intro_scene(script: Script):
         color=WHITE,
     )
 
-    script.do(
-        fade_in(title),
-        move_down(title, 80, 1, ease=ease_out_cubic),
-    )
+    script.play(drop_in(title))
 
     desc_intro = Text(
         script,
@@ -125,47 +118,29 @@ def intro_scene(script: Script):
         color=GREY,
     )
 
-    script.do(
-        drop_in(desc_intro),
-        seq(wait(0.2), drop_in(array_example)),
-    )
+    script.play(stagger(0.2, drop_in(desc_intro), drop_in(array_example)))
 
-    script.do(wait(0.4))
-    script.do(
-        drop_in(answer_outro),
-    )
+    script.wait(0.4)
+    script.play(drop_in(answer_outro))
 
-    script.do(
+    script.play(
         grow_in(box1, ease=ease_in_out_cubic),
         grow_in(box2, ease=ease_in_out_cubic),
     )
-    script.do(wait(1.0))
-    script.do(
+    script.wait(1.0)
+    script.play(
         grow_out(box1, ease=ease_in_out_cubic),
         grow_out(box2, ease=ease_in_out_cubic),
     )
 
-    script.do(wait(0.2))
-    script.do(
-        drop_in(task_part1),
-        seq(wait(0.2), drop_in(task_part2)),
-    )
+    script.wait(0.2)
+    script.play(stagger(0.2, drop_in(task_part1), drop_in(task_part2)))
 
-    script.do(wait(0.2))
-    script.do(
-        fade_in(constraint1),
-        move_down(constraint1, 80, 1, ease=ease_out_cubic),
-        seq(
-            wait(0.2),
-            parallel(
-                fade_in(constraint2),
-                move_down(constraint2, 80, 1, ease=ease_out_cubic),
-            ),
-        ),
-    )
+    script.wait(0.2)
+    script.play(stagger(0.2, drop_in(constraint1), drop_in(constraint2)))
 
-    script.do(wait(3.0))
-    script.do(
+    script.wait(3.0)
+    script.play(
         drop_out(title),
         drop_out(desc_intro),
         drop_out(array_example),
@@ -282,10 +257,10 @@ def explainer_scene(script: Script):
         anchor_y="top",
     )
 
-    script.do(drop_in(solution))
-    script.do(drop_in(step1))
-    script.do(drop_in(step2))
-    script.do(
+    script.play(drop_in(solution))
+    script.play(drop_in(step1))
+    script.play(drop_in(step2))
+    script.play(
         drop_in(step3),
         drop_in(step3_part2),
     )
