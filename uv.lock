@@ -8,7 +8,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "imageio", extra = ["ffmpeg"] },
-    { name = "pillow" },
+    { name = "numpy" },
     { name = "pyglet" },
     { name = "pygments" },
 ]
@@ -24,7 +24,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "imageio", extras = ["ffmpeg"], specifier = ">=2.37.2" },
-    { name = "pillow", specifier = ">=11.0.0" },
+    { name = "numpy", specifier = ">=2.4.1" },
     { name = "pyglet", specifier = ">=2.0.20" },
     { name = "pygments", specifier = ">=2.18.0" },
 ]
