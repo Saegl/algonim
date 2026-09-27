@@ -28,8 +28,10 @@ def load_script(path: Path):
     return module.build_script
 
 
-def exec_preview(script: Script):
-    Player(script).start()
+def exec_preview(window: AppWindow, script: Script):
+    player = Player(script)
+    window.attach_player(player)
+    player.start()
     pyglet.app.run()
 
 
@@ -140,6 +142,6 @@ if __name__ == "__main__":
     script = write_script(window, build_script)
 
     if not args.video:
-        exec_preview(script)
+        exec_preview(window, script)
     else:
         exec_video_renderer(window, script, args.fps, args.output)

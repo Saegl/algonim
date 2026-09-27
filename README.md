@@ -20,7 +20,8 @@ explaining algorithms and code execution step by step.
 
 # Usage
 
-Run a video script in preview mode (press `Q` to quit):
+Run a video script in preview mode (`Space` pauses, `F3` toggles dev mode
+with a seekable timeline, `Q` quits):
 
 ```bash
 python -m algonim videoscripts/bubble_sort.py

@@ -125,6 +125,11 @@ class Player:
     def __init__(self, script: Script):
         self.script = script
         self.t = 0.0
+        self.paused = False
+
+    @property
+    def finished(self) -> bool:
+        return self.t >= self.script.duration
 
     def start(self):
         pyglet.clock.schedule(self.tick)
@@ -132,11 +137,22 @@ class Player:
     def stop(self):
         pyglet.clock.unschedule(self.tick)
 
-    def tick(self, dt: float):
-        self.t = min(self.t + dt, self.script.duration)
+    def toggle_pause(self):
+        if self.finished:
+            self.seek(0.0)
+            self.paused = False
+        else:
+            self.paused = not self.paused
+
+    def seek(self, t: float):
+        self.t = min(max(t, 0.0), self.script.duration)
         self.script.seek(self.t)
-        if self.t >= self.script.duration:
-            self.stop()
+
+    def tick(self, dt: float):
+        if self.paused or self.finished:
+            return
+        self.seek(self.t + dt)
+        if self.finished:
             print("Script complete")
 
 

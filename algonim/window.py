@@ -2,9 +2,11 @@ from typing import Any
 
 import pyglet
 from pyglet.gl import Config  # pyright: ignore[reportPrivateImportUsage]
-from pyglet.window import key
+from pyglet.window import key, mouse
 
+from algonim.dev import Timeline
 from algonim.resolution import Resolution
+from algonim.script import Player
 
 
 class AppWindow(pyglet.window.Window):
@@ -20,12 +22,41 @@ class AppWindow(pyglet.window.Window):
         self.resolution = resolution
         # TODO: improve typing later
         self.objects: list[Any] = []
+        # Set in preview only, so video rendering ignores playback controls
+        self.player: Player | None = None
+        self.timeline: Timeline | None = None
+        self.dev_mode = False
+        self.scrubbing = False
+
+    def attach_player(self, player: Player):
+        self.player = player
+        self.timeline = Timeline(player, self.resolution)
 
     def on_draw(self):
         self.clear()
         for object in self.objects:
             object.draw()
+        if self.dev_mode and self.timeline:
+            self.timeline.draw()
 
     def on_key_press(self, symbol, modifiers):
         if symbol == key.Q:
             self.close()
+        elif symbol == key.F3 and self.player:
+            self.dev_mode = not self.dev_mode
+        elif symbol == key.SPACE and self.player:
+            self.player.toggle_pause()
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        if button == mouse.LEFT and self.dev_mode and self.timeline:
+            self.scrubbing = self.timeline.hit(y)
+            if self.scrubbing:
+                self.timeline.seek_to(x)
+
+    def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
+        if self.scrubbing and self.timeline:
+            self.timeline.seek_to(x)
+
+    def on_mouse_release(self, x, y, button, modifiers):
+        if button == mouse.LEFT:
+            self.scrubbing = False
