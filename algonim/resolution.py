@@ -34,12 +34,8 @@ class Resolution:
         return self.width / VIRTUAL_WIDTH
 
     def length(self, value: float) -> float:
-        """Virtual size (line width, font size) to pixels"""
+        """Virtual coordinate or size (line width, font size) to pixels"""
         return value * self.scale
-
-    def pixel(self, value: float) -> int:
-        """Virtual coordinate to the pixel grid, text blurs between pixels"""
-        return round(value * self.scale)
 
 
 def _use_unhinted_advances():

@@ -15,7 +15,7 @@ class AppWindow(pyglet.window.Window):
             resizable=False,
             fullscreen=False,
             visible=visible,
-            config=Config(double_buffer=True),  # type: ignore[abstract]
+            config=Config(double_buffer=True, sample_buffers=1, samples=4),  # type: ignore[abstract]
         )
         self.resolution = resolution
         # TODO: improve typing later

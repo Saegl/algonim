@@ -66,8 +66,8 @@ class Array:
 
         for i, entry in enumerate(self.entries):
             entry.position = (
-                res.pixel(left + self.entry_size * (i + 0.5)),
-                res.pixel(self._y),
+                res.length(left + self.entry_size * (i + 0.5)),
+                res.length(self._y),
                 0,
             )
 

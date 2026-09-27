@@ -36,10 +36,10 @@ class Text:
         self.label.color = replace_alpha(self.label.color, int(alpha))
 
     def set_x(self, x):
-        self.label.x = self.resolution.pixel(x)
+        self.label.x = self.resolution.length(x)
 
     def set_y(self, y):
-        self.label.y = self.resolution.pixel(y)
+        self.label.y = self.resolution.length(y)
 
     def draw(self):
         self.label.draw()

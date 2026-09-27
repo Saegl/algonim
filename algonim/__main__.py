@@ -47,7 +47,12 @@ def exec_video_renderer(
 
     window.switch_to()
     # Frames render offscreen, so the video doesn't depend on the window
-    # being visible or fitting on the screen
+    # being visible or fitting on the screen. Drawing goes to a multisampled
+    # buffer, which is resolved into a plain one that can be read
+    msaa = pyglet.image.buffer.Framebuffer()
+    msaa.attach_renderbuffer(
+        pyglet.image.buffer.Renderbuffer(width, height, gl.GL_RGBA8, samples=4)
+    )
     framebuffer = pyglet.image.buffer.Framebuffer()
     framebuffer.attach_texture(pyglet.image.Texture.create(width, height))
     window.projection = Mat4.orthogonal_projection(0, width, 0, height, -255, 255)
@@ -58,9 +63,23 @@ def exec_video_renderer(
             script.seek(i / target_fps)
 
             window.dispatch_events()
-            framebuffer.bind()
+            msaa.bind()
             gl.glViewport(0, 0, width, height)
             window.on_draw()
+            gl.glBindFramebuffer(gl.GL_DRAW_FRAMEBUFFER, framebuffer.id)
+            gl.glBlitFramebuffer(
+                0,
+                0,
+                width,
+                height,
+                0,
+                0,
+                width,
+                height,
+                gl.GL_COLOR_BUFFER_BIT,
+                gl.GL_NEAREST,
+            )
+            framebuffer.bind()
             gl.glReadPixels(
                 0, 0, width, height, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, frame.ctypes.data
             )

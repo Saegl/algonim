@@ -8,8 +8,8 @@ class Var:
         res = script.resolution
         self.label = pyglet.text.Label(
             f"{varname} = {value}",
-            res.pixel(x),
-            res.pixel(y),
+            res.length(x),
+            res.length(y),
             font_size=res.length(27),
         )
         self.varname = varname

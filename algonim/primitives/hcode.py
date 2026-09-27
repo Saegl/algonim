@@ -88,18 +88,18 @@ class HighlightedCode:
             number = pyglet.text.document.FormattedDocument()
             number.insert_text(0, str(i + 1), {**style, "color": (255, 255, 255, 255)})
 
-            center_y = res.pixel(self.line_center(i + 1))
+            center_y = res.length(self.line_center(i + 1))
             self.layouts += [
                 pyglet.text.layout.TextLayout(
                     document,
-                    x=res.pixel(x),
+                    x=res.length(x),
                     y=center_y,
                     anchor_y="center",
                     batch=self.batch,
                 ),
                 pyglet.text.layout.TextLayout(
                     number,
-                    x=res.pixel(x - 25),
+                    x=res.length(x - 25),
                     y=center_y,
                     anchor_x="right",
                     anchor_y="center",
