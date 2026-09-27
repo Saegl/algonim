@@ -7,6 +7,7 @@ from algonim.script import (
     Script,
     drop_in,
     drop_out,
+    fade_in,
     grow_in,
     grow_out,
     stagger,
@@ -312,7 +313,8 @@ def coding_scene(script: Script):
     # executing line is highlighted, variables updated
     """
 
-    HighlightedCode(script, CODE, x=167, y=700, font_size=27)
+    code = HighlightedCode(script, CODE, x=167, y=700, font_size=27)
+    script.play(fade_in(code))
 
 
 def exercises_scene(script: Script):
