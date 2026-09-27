@@ -2,147 +2,95 @@ import pyglet
 from pyglet import shapes
 
 from algonim.colors import TRANSPARENT, WHITE, replace_alpha
+from algonim.script import Script
 
 
 class Array:
-    def __init__(self, x, y, data: list[int], thickness: float = 5.0):
-        self.x = x
-        self.y = y
-        self.time = 0
-
-        n = len(data)
+    def __init__(
+        self,
+        script: Script,
+        x,
+        y,
+        data: list[int],
+        entry_size: float = 80,
+        thickness: float = 4.0,
+        font_size: float = 30,
+    ):
+        self.resolution = script.resolution
         self.data = data
-        self.entry_size = 100
+        self.entry_size = entry_size
         self.thickness = thickness
 
-        width = n * self.entry_size
-        height = self.entry_size
+        n = len(data)
+        width = n * entry_size
+        half = thickness / 2
 
-        left_bottom_x = x - width / 2
-        left_bottom_y = y - height / 2
-
-        self.left_border = shapes.Line(
-            x=left_bottom_x,
-            y=left_bottom_y,
-            x2=left_bottom_x,
-            y2=left_bottom_y + self.entry_size,
-            width=thickness,
-            color=WHITE,
-        )
-        self.right_border = shapes.Line(
-            x=left_bottom_x + self.entry_size * n,
-            y=left_bottom_y,
-            x2=left_bottom_x + self.entry_size * n,
-            y2=left_bottom_y + self.entry_size,
-            width=thickness,
-            color=WHITE,
-        )
-        self.bottom_border = shapes.Line(
-            x=left_bottom_x - thickness / 2,
-            y=left_bottom_y,
-            x2=left_bottom_x + self.entry_size * n + thickness / 2,
-            y2=left_bottom_y,
-            width=thickness,
-            color=WHITE,
-        )
-        self.top_border = shapes.Line(
-            x=left_bottom_x - thickness / 2,
-            y=left_bottom_y + self.entry_size,
-            x2=left_bottom_x + self.entry_size * n + thickness / 2,
-            y2=left_bottom_y + self.entry_size,
-            width=thickness,
-            color=WHITE,
-        )
-        self.inside_lines = []
-        for i in range(n - 1):
-            self.inside_lines.append(
-                shapes.Line(
-                    x=left_bottom_x + self.entry_size * (i + 1),
-                    y=left_bottom_y,
-                    x2=left_bottom_x + self.entry_size * (i + 1),
-                    y2=left_bottom_y + self.entry_size,
-                    width=thickness,
-                    color=WHITE,
-                )
+        # Segments relative to the bottom left corner, horizontal borders
+        # stick out to fill the corners
+        self.segments = [
+            (-half, 0, width + half, 0),
+            (-half, entry_size, width + half, entry_size),
+        ] + [(entry_size * i, 0, entry_size * i, entry_size) for i in range(n + 1)]
+        self.lines = [
+            shapes.Line(
+                0, 0, 0, 0, width=self.resolution.length(thickness), color=WHITE
             )
-
-        self.entries = []
-        for i, number in enumerate(data):
-            self.entries.append(
-                pyglet.text.Label(
-                    str(number),
-                    font_size=36,
-                    x=left_bottom_x + self.entry_size / 2 + self.entry_size * i,
-                    y=y,
-                    anchor_x="center",
-                    anchor_y="center",
-                )
+            for _ in self.segments
+        ]
+        self.entries = [
+            pyglet.text.Label(
+                str(number),
+                font_size=self.resolution.length(font_size),
+                anchor_x="center",
+                anchor_y="center",
             )
+            for number in data
+        ]
+
+        self.x = x
+        self.y = y
+        self.layout()
         self.set_color(TRANSPARENT)
+        script.register(self)
+
+    def layout(self):
+        res = self.resolution
+        left = self.x - len(self.data) * self.entry_size / 2
+        bottom = self.y - self.entry_size / 2
+
+        for line, (x1, y1, x2, y2) in zip(self.lines, self.segments, strict=True):
+            line.position = (res.length(left + x1), res.length(bottom + y1))
+            line.x2 = res.length(left + x2)
+            line.y2 = res.length(bottom + y2)
+
+        for i, entry in enumerate(self.entries):
+            entry.position = (
+                res.pixel(left + self.entry_size * (i + 0.5)),
+                res.pixel(self.y),
+                0,
+            )
 
     def draw(self):
-        self.left_border.draw()
-        self.right_border.draw()
-        self.bottom_border.draw()
-        self.top_border.draw()
-        for line in self.inside_lines:
+        for line in self.lines:
             line.draw()
 
         for entry in self.entries:
             entry.draw()
 
-    def move_x(self, dx):
-        self.x += dx
-        self.left_border.x += dx
-        self.right_border.x += dx
-        self.bottom_border.x += dx
-        self.top_border.x += dx
-        for line in self.inside_lines:
-            line.x += dx
-
-        for entry in self.entries:
-            entry.x += dx
-
-    def move_y(self, dy):
-        self.y += dy
-        self.left_border.y += dy
-        self.right_border.y += dy
-        self.bottom_border.y += dy
-        self.top_border.y += dy
-        for line in self.inside_lines:
-            line.y += dy
-
-        for entry in self.entries:
-            entry.y += dy
-
     def set_x(self, x):
-        delta_x = x - self.x
-        self.move_x(delta_x)
+        self.x = x
+        self.layout()
 
     def set_y(self, y):
-        delta_y = y - self.y
-        self.move_y(delta_y)
+        self.y = y
+        self.layout()
 
     def set_color(self, color):
-        self.left_border.color = color
-        self.right_border.color = color
-        self.bottom_border.color = color
-        self.top_border.color = color
-        for line in self.inside_lines:
+        for line in self.lines:
             line.color = color
 
         for entry in self.entries:
             entry.color = color
 
     def set_alpha(self, alpha):
-        color = replace_alpha(self.left_border.color, alpha)
-
-        self.left_border.color = color
-        self.right_border.color = color
-        self.bottom_border.color = color
-        self.top_border.color = color
-        for line in self.inside_lines:
-            line.color = color
-
-        for entry in self.entries:
-            entry.color = color
+        self.set_color(replace_alpha(self.lines[0].color, alpha))

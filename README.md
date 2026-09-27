@@ -34,20 +34,22 @@ python -m algonim videoscripts/max_elem.py --video --headless -o max_elem.mp4
 
 Options: `--video` renders to a file, `--headless` hides the window,
 `-o/--output` sets the path (default `output.mp4`), `--fps` sets the frame
-rate (default 60).
+rate (default 60), `-r/--resolution` picks a 16:9 preset: `720p`, `900p`,
+`1080p` (default), `1440p`, `4k`.
 
-Each video script must define a function that returns a `Script`:
+Each video script must define a function that fills the given `Script`.
+Scripts always use a virtual 1600x900 canvas, `(0, 0)` is the bottom left
+corner. Positions, sizes and font sizes are scaled to the chosen resolution,
+so the same script renders crisp and with identical layout at any preset.
 
 ```python
 from algonim.script import Script, fade_in
 from algonim.primitives.text import Text
 
 
-def build_script():
-    script = Script()
-    title = Text(script, 960, 540, "Hello")
+def build_script(script: Script):
+    title = Text(script, 800, 450, "Hello")
     script.do(fade_in(title))
-    return script
 ```
 
 # Development
@@ -61,7 +63,6 @@ ruff check . && ruff format .
 
 # TODO
 
-- Resolution presets (native, fullhd, 4k)
 - Scene abstraction (window-independent scripts)
 - Pause / resume in preview mode
 - Array index highlighting

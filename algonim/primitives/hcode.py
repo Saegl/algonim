@@ -7,7 +7,9 @@ from pygments.token import Token
 
 from algonim.easing import ease_in_out_cubic
 from algonim.primitives.arrow import Arrow
-from algonim.script import ActionFn, defer, move_to
+from algonim.script import ActionFn, Script, defer, move_to
+
+FONT_NAME = "FiraCode Nerd Font Mono"
 
 
 def hex_to_rgba(hex_color: str) -> tuple[int, int, int, int]:
@@ -37,84 +39,98 @@ class PygletFormatter(Formatter):
             self.output.append((value, rgba))  # Store token and its RGBA color
 
 
-code = """
-def hello_world():
-    print("Hello, world!")
-"""
+def split_lines(tokens: list[tuple[str, tuple]]) -> list[list[tuple[str, tuple]]]:
+    lines: list[list[tuple[str, tuple]]] = [[]]
+    for value, rgba in tokens:
+        for i, part in enumerate(value.split("\n")):
+            if i > 0:
+                lines.append([])
+            if part:
+                lines[-1].append((part, rgba))
+    # Pygments always ends the code with a newline
+    if not lines[-1]:
+        lines.pop()
+    return lines
 
 
 class HighlightedCode:
-    def __init__(self, code: str, x, y, font_size: int):
-        self.font_size = font_size
+    def __init__(
+        self,
+        script: Script,
+        code: str,
+        x: float,
+        y: float,
+        font_size: float = 23,
+        line_height: float | None = None,
+    ):
+        """Code block with line numbers, (x, y) is its top left corner"""
+        res = script.resolution
+        self.x = x
+        self.y = y
+        self.line_height = line_height or font_size * 1.65
+        self.batch = pyglet.graphics.Batch()
+
         formatter = PygletFormatter(style="monokai")
-        lexer = PythonLexer()
-        highlight(code, lexer, formatter)  # This populates formatter.output
+        highlight(code, PythonLexer(), formatter)  # This populates formatter.output
+        lines = split_lines(formatter.output)
 
-        document = pyglet.text.document.FormattedDocument()
-        for value, rgba in formatter.output:
-            document.insert_text(
-                len(document.text),
-                value,
-                {
-                    "color": rgba,
-                    "font_size": font_size,
-                    "font_name": "FiraCode Nerd Font Mono",
-                },
-            )
+        # Lines are separate layouts: multiline layouts snap line height to
+        # whole pixels, so lower lines drift between resolutions
+        style = {"font_size": res.length(font_size), "font_name": FONT_NAME}
+        self.layouts = []
+        for i, tokens in enumerate(lines):
+            document = pyglet.text.document.FormattedDocument()
+            for value, rgba in tokens:
+                document.insert_text(
+                    len(document.text), value, {**style, "color": rgba}
+                )
 
-        self.layout = pyglet.text.layout.TextLayout(
-            document, multiline=True, wrap_lines=False
-        )
-        self.layout.x = x
-        self.layout.y = y
-        self.layout.width = self.layout.content_width
-        self.layout.height = self.layout.content_height
-        # self.cursor = pyglet.shapes.Circle(x, y, 20)
-        self.cursor = Arrow(
-            pyglet.graphics.Batch(), x - 150, y, x - 100, y, head_length=25, width=3
-        )
+            number = pyglet.text.document.FormattedDocument()
+            number.insert_text(0, str(i + 1), {**style, "color": (255, 255, 255, 255)})
 
-        n_lines = len(self.layout._get_lines())
-        numbers = pyglet.text.document.FormattedDocument()
-        for i in range(1, n_lines):
-            digits = str(i)
-            prefix = " " if len(digits) == 1 else ""
-            numbers.insert_text(
-                len(numbers.text),
-                prefix + str(i) + ("\n" if i < n_lines - 1 else ""),
-                {
-                    "color": [255, 255, 255, 255],
-                    "font_size": font_size,
-                    "font_name": "FiraCode Nerd Font Mono",
-                },
-            )
-        self.numbers = pyglet.text.layout.TextLayout(
-            numbers, multiline=True, wrap_lines=False
-        )
-        self.numbers.y = self.layout.top - self.numbers.content_height
-        self.numbers.x = self.layout.x - 80
-        # self.cursor.x = self.layout.x - 120
-        # self.numbers.y = self.layout.y
+            center_y = res.pixel(self.line_center(i + 1))
+            self.layouts += [
+                pyglet.text.layout.TextLayout(
+                    document,
+                    x=res.pixel(x),
+                    y=center_y,
+                    anchor_y="center",
+                    batch=self.batch,
+                ),
+                pyglet.text.layout.TextLayout(
+                    number,
+                    x=res.pixel(x - 25),
+                    y=center_y,
+                    anchor_x="right",
+                    anchor_y="center",
+                    batch=self.batch,
+                ),
+            ]
 
         self.line = pyglet.shapes.Line(
-            self.numbers.x + 60,
-            self.numbers.y,
-            self.numbers.x + 60,
-            self.numbers.y + self.numbers.content_height,
-            width=3,
+            res.length(x - 15),
+            res.length(y),
+            res.length(x - 15),
+            res.length(y - len(lines) * self.line_height),
+            width=res.length(2.5),
+            batch=self.batch,
         )
+        cursor_y = self.line_center(1)
+        self.cursor = Arrow(
+            res, x - 125, cursor_y, x - 85, cursor_y, head_length=20, width=2.5
+        )
+        script.register(self)
+
+    def line_center(self, lineno: int) -> float:
+        return self.y - (lineno - 0.5) * self.line_height
 
     def hl(self, lineno: int, line) -> ActionFn:
         def make():
-            line_y = self.layout._get_lines()[lineno].y
-            final_y = line_y + self.layout.y + self.layout.content_height + 60
-
-            return move_to(self.cursor, self.cursor.x, final_y, 0.5, ease_in_out_cubic)
+            y = self.line_center(lineno)
+            return move_to(self.cursor, self.cursor.x, y, 0.5, ease_in_out_cubic)
 
         return defer(make)
 
     def draw(self):
-        self.layout.draw()
+        self.batch.draw()
         self.cursor.draw()
-        self.numbers.draw()
-        self.line.draw()

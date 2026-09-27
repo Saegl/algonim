@@ -9,14 +9,9 @@ from algonim.script import (
 )
 
 
-def build_script():
-    script = Script()
-
-    arr = Array(1920 // 2, 1080 // 2, [4, 1, 2, 5, 3, 4])
-    script.register(arr)
-
-    arr2 = Array(1920 // 2, 1080 // 2 - 200, [1, 2, 3])
-    script.register(arr2)
+def build_script(script: Script):
+    arr = Array(script, 800, 450, [4, 1, 2, 5, 3, 4])
+    arr2 = Array(script, 800, 450 - 170, [1, 2, 3])
 
     script.do(
         parallel(
@@ -24,10 +19,8 @@ def build_script():
             fade_in(arr2),
         ),
     )
-    script.do(move_up(arr, amount=200, seconds=2))
+    script.do(move_up(arr, amount=170, seconds=2))
     # script.do(wait(3))
     script.do(fade_out(arr2))
-    script.do(move_down(arr, amount=200, seconds=2))
+    script.do(move_down(arr, amount=170, seconds=2))
     script.do(fade_out(arr))
-
-    return script

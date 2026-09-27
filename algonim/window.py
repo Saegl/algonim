@@ -4,17 +4,20 @@ import pyglet
 from pyglet.gl import Config  # pyright: ignore[reportPrivateImportUsage]
 from pyglet.window import key
 
+from algonim.resolution import Resolution
+
 
 class AppWindow(pyglet.window.Window):
-    def __init__(self, visible: bool, double_buffer: bool):
+    def __init__(self, resolution: Resolution, visible: bool):
         super().__init__(
-            width=1920,
-            height=1080,
+            width=resolution.width,
+            height=resolution.height,
             resizable=False,
             fullscreen=False,
             visible=visible,
-            config=Config(double_buffer=double_buffer),  # type: ignore[abstract]
+            config=Config(double_buffer=True),  # type: ignore[abstract]
         )
+        self.resolution = resolution
         # TODO: improve typing later
         self.objects: list[Any] = []
 

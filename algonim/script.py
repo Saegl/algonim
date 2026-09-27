@@ -3,6 +3,7 @@ from collections.abc import Callable
 import pyglet
 
 from algonim.easing import ease_in_out_cubic, ease_linear, ease_out_cubic, lerp
+from algonim.resolution import Resolution
 from algonim.time_utils import Timer
 
 type ActionFn = Callable[[float], bool]
@@ -17,7 +18,8 @@ Returns:
 
 
 class Script:
-    def __init__(self) -> None:
+    def __init__(self, resolution: Resolution) -> None:
+        self.resolution = resolution
         self.steps: list[ActionFn] = []
         # TODO: typing
         self.actors = []  # type: ignore
@@ -59,8 +61,9 @@ class ScriptExecutor:
 
 
 def write_script(window, script_writer) -> ScriptExecutor:
+    script = Script(window.resolution)
     with Timer("script_writer"):
-        script = script_writer()
+        script_writer(script)
 
     window.objects.extend(script.actors)
     script_exec = ScriptExecutor(script)
@@ -81,29 +84,27 @@ def fade_in(obj, duration=1.0, ease=ease_linear) -> ActionFn:
     return action
 
 
-def grow_in(obj, duration=0.5, ease=ease_linear) -> ActionFn:
+def grow_in(obj, height=50, duration=0.5, ease=ease_linear) -> ActionFn:
     elapsed = 0.0
 
     def action(dt):
         nonlocal elapsed
         elapsed += dt
         u = min(1.0, elapsed / duration)
-        a = int(60 * ease(u))
-        obj.set_height(a)
+        obj.set_height(height * ease(u))
         return u >= 1.0
 
     return action
 
 
-def grow_out(obj, duration=0.5, ease=ease_linear) -> ActionFn:
+def grow_out(obj, height=50, duration=0.5, ease=ease_linear) -> ActionFn:
     elapsed = 0.0
 
     def action(dt):
         nonlocal elapsed
         elapsed += dt
         u = min(1.0, elapsed / duration)
-        a = int(60 * (1.0 - ease(u)))
-        obj.set_height(a)
+        obj.set_height(height * (1.0 - ease(u)))
         return u >= 1.0
 
     return action
@@ -112,14 +113,14 @@ def grow_out(obj, duration=0.5, ease=ease_linear) -> ActionFn:
 def drop_in(obj) -> ActionFn:
     return parallel(
         fade_in(obj),
-        move_down(obj, 100, 1, ease=ease_out_cubic),
+        move_down(obj, 80, 1, ease=ease_out_cubic),
     )
 
 
 def drop_out(obj) -> ActionFn:
     return parallel(
         fade_out(obj, ease=ease_out_cubic),
-        move_down(obj, 100, 1, ease=ease_out_cubic),
+        move_down(obj, 80, 1, ease=ease_out_cubic),
     )
 
 

@@ -36,34 +36,22 @@ def intro_scene(script: Script):
     ### Pause here if you want to solve it yourself
     """
 
-    win_center_x = 1920 // 2
-    win_center_y = 1080 // 2
+    win_center_x = 1600 // 2
+    win_center_y = 900 // 2
 
-    shift_y = 410
-    title_size = 36
-    desc_size = 32
+    shift_y = 342
+    title_size = 30
+    desc_size = 27
 
-    title_padding_extra = 30
-    padding = 42
+    title_padding_extra = 25
+    padding = 35
 
     text_start_x = win_center_x
     text_start_y = win_center_y + shift_y
 
     # Highlight max (20) in both array and text, coords are just guessed
-    box1 = HighlightBox(
-        x=985,
-        y=shift_y + 230,
-        width=60,
-        height=0,
-        script=script,
-    )
-    box2 = HighlightBox(
-        x=985 + 191,
-        y=shift_y + 157,
-        width=60,
-        height=0,
-        script=script,
-    )
+    box1 = HighlightBox(script, x=821, y=shift_y + 192, width=50, height=0)
+    box2 = HighlightBox(script, x=821 + 159, y=shift_y + 131, width=50, height=0)
 
     title = Text(
         script,
@@ -77,7 +65,7 @@ def intro_scene(script: Script):
 
     script.do(
         fade_in(title),
-        move_down(title, 100, 1, ease=ease_out_cubic),
+        move_down(title, 80, 1, ease=ease_out_cubic),
     )
 
     desc_intro = Text(
@@ -133,7 +121,7 @@ def intro_scene(script: Script):
         text_start_x,
         text_start_y - title_padding_extra - (desc_size + padding) * 7,
         "Use basic language features instead: variables and loops.",
-        font_size=32,
+        font_size=desc_size,
         color=GREY,
     )
 
@@ -166,12 +154,12 @@ def intro_scene(script: Script):
     script.do(wait(0.2))
     script.do(
         fade_in(constraint1),
-        move_down(constraint1, 100, 1, ease=ease_out_cubic),
+        move_down(constraint1, 80, 1, ease=ease_out_cubic),
         seq(
             wait(0.2),
             parallel(
                 fade_in(constraint2),
-                move_down(constraint2, 100, 1, ease=ease_out_cubic),
+                move_down(constraint2, 80, 1, ease=ease_out_cubic),
             ),
         ),
     )
@@ -234,14 +222,14 @@ def explainer_scene(script: Script):
     ### Pause to code this solution yourself
     """
 
-    text_start_x = 100
-    text_start_y = 1080 - 100
+    text_start_x = 83
+    text_start_y = 900 - 83
 
-    title_size = 36
-    desc_size = 32
+    title_size = 30
+    desc_size = 27
 
-    title_padding_extra = 30
-    padding = 42
+    title_padding_extra = 25
+    padding = 35
 
     solution = Text(
         script,
@@ -349,8 +337,7 @@ def coding_scene(script: Script):
     # executing line is highlighted, variables updated
     """
 
-    code = HighlightedCode(CODE, x=200, y=200, font_size=32)
-    script.register(code)
+    HighlightedCode(script, CODE, x=167, y=700, font_size=27)
 
 
 def exercises_scene(script: Script):
@@ -366,12 +353,8 @@ def exercises_scene(script: Script):
     """
 
 
-def build_script():
-    script = Script()
-
+def build_script(script: Script):
     intro_scene(script)
     explainer_scene(script)
     # coding_scene(script)
     # exercises_scene(script)
-
-    return script

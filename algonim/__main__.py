@@ -4,7 +4,10 @@ from pathlib import Path
 import imageio
 import numpy as np
 import pyglet
+from pyglet import gl
+from pyglet.math import Mat4
 
+from algonim.resolution import RESOLUTIONS, Resolution
 from algonim.script import ScriptExecutor, write_script
 from algonim.time_utils import Timer
 from algonim.window import AppWindow
@@ -37,36 +40,57 @@ def exec_video_renderer(
     output: Path,
 ):
     fixed_dt = 1 / target_fps
-    buffer = pyglet.image.get_buffer_manager().get_color_buffer()
+    width, height = window.resolution.width, window.resolution.height
     # macro_block_size=8 keeps 1080p unpadded (default 16 resizes it to 1088)
     writer = imageio.get_writer(
         output, fps=target_fps, codec="libx264", quality=8, macro_block_size=8
     )
 
-    with Timer("render_frames"):
-        window.switch_to()
+    window.switch_to()
+    # Frames render offscreen, so the video doesn't depend on the window
+    # being visible or fitting on the screen
+    framebuffer = pyglet.image.buffer.Framebuffer()
+    framebuffer.attach_texture(pyglet.image.Texture.create(width, height))
+    window.projection = Mat4.orthogonal_projection(0, width, 0, height, -255, 255)
+    frame = np.empty((height, width, 4), dtype=np.uint8)
 
+    with Timer("render_frames"):
         while not script_exec.is_complete():
             script_exec.execute_current_action(fixed_dt)
 
-            window.clear()
             window.dispatch_events()
-            window.dispatch_event("on_draw")
-
-            # To show preview in OS window, window without `double_buffer`
-            # should use it over `flip`
-            pyglet.gl.glFlush()
-
-            # Fetch native RGBA: pyglet's own format conversion is very slow
-            raw = buffer.get_image_data().get_data("RGBA", window.width * 4)
-            frame = np.frombuffer(raw, dtype=np.uint8).reshape(
-                window.height, window.width, 4
+            framebuffer.bind()
+            gl.glViewport(0, 0, width, height)
+            window.on_draw()
+            gl.glReadPixels(
+                0, 0, width, height, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, frame.ctypes.data
             )
             # OpenGL stores image upside down
             writer.append_data(np.ascontiguousarray(frame[::-1, :, :3]))
 
+            if window.visible:
+                show_frame(window, width, height)
+            framebuffer.unbind()
+
     window.set_visible(False)
     writer.close()
+
+
+def show_frame(window: AppWindow, width: int, height: int):
+    """Blit the offscreen frame, still bound for reading, to the window"""
+    gl.glBindFramebuffer(gl.GL_DRAW_FRAMEBUFFER, 0)
+    gl.glBlitFramebuffer(
+        0,
+        0,
+        width,
+        height,
+        0,
+        0,
+        *window.get_framebuffer_size(),
+        gl.GL_COLOR_BUFFER_BIT,
+        gl.GL_LINEAR,
+    )
+    window.flip()
 
 
 if __name__ == "__main__":
@@ -80,11 +104,19 @@ if __name__ == "__main__":
         "-o", "--output", type=Path, default=Path("output.mp4"), help="Video path"
     )
     parser.add_argument("--fps", type=int, default=60, help="Video frame rate")
+    parser.add_argument(
+        "-r",
+        "--resolution",
+        choices=RESOLUTIONS,
+        default="1080p",
+        help="Output resolution, scripts use 1600x900 coordinates at any of them",
+    )
 
     args = parser.parse_args()
 
+    resolution = Resolution.preset(args.resolution)
     # Type ignore here is a bug in pyglet typing
-    window = AppWindow(visible=not args.headless, double_buffer=not args.video)  # type: ignore[abstract]
+    window = AppWindow(resolution, visible=not args.headless)  # type: ignore[abstract]
     build_script = load_script(Path(args.script))
 
     script_exec = write_script(window, build_script)

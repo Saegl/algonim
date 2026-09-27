@@ -20,26 +20,19 @@ for i in reversed(range(n)):
 """
 
 
-def build_script():
-    script = Script()
-
+def build_script(script: Script):
     program_filepath = pathlib.Path("videoprograms/bubble_sort.py")
 
-    code = HighlightedCode(program_filepath.open("rt").read(), 420, 250, 28)
-    print(code.layout.content_width, code.layout.content_height)
-    script.register(code)
+    code = HighlightedCode(script, program_filepath.open("rt").read(), 350, 675)
 
     lines = trace(program_filepath, {"arr", "swapped", "i", "j"})
 
     variables = {
-        "i": Var(100, 100, "i", "null"),
-        "j": Var(300, 100, "j", "null"),
-        "swapped": Var(500, 100, "swapped", "null"),
-        "arr": Var(1000, 100, "arr", "null"),
+        "i": Var(script, 83, 83, "i", "null"),
+        "j": Var(script, 250, 83, "j", "null"),
+        "swapped": Var(script, 417, 83, "swapped", "null"),
+        "arr": Var(script, 833, 83, "arr", "null"),
     }
-
-    for var in variables.values():
-        script.register(var)
 
     prev_snapshot = Snapshot({}, "", -1)
     for lineno, snapshot in lines:
@@ -58,5 +51,3 @@ def build_script():
             script.do(variables[varname].update_val(changed[varname].to))
 
         script.do(wait(2))
-
-    return script

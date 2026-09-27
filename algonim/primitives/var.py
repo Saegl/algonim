@@ -1,10 +1,19 @@
 import pyglet
 
+from algonim.script import Script
+
 
 class Var:
-    def __init__(self, x, y, varname: str, value: str):
-        self.label = pyglet.text.Label(f"{varname} = {value}", x, y, font_size=32)
+    def __init__(self, script: Script, x, y, varname: str, value: str):
+        res = script.resolution
+        self.label = pyglet.text.Label(
+            f"{varname} = {value}",
+            res.pixel(x),
+            res.pixel(y),
+            font_size=res.length(27),
+        )
         self.varname = varname
+        script.register(self)
 
     def update_val(self, value):
         def update(delta):

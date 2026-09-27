@@ -12,24 +12,23 @@ class Text:
         x,
         y,
         text: str,
-        font_size: int = 32,
+        font_size: float = 27,
         bold=False,
         color=WHITE,
         anchor_x: AnchorX = "center",
         anchor_y: AnchorY = "center",
     ):
-        self.x = x
-        self.y = y
+        self.resolution = script.resolution
         self.label = pyglet.text.Label(
             text,
-            x,
-            y,
             anchor_x=anchor_x,
             anchor_y=anchor_y,
-            font_size=font_size,
+            font_size=self.resolution.length(font_size),
             bold=bold,
         )
         self.label.color = color
+        self.set_x(x)
+        self.set_y(y)
         self.set_alpha(0)
         script.register(self)
 
@@ -41,11 +40,11 @@ class Text:
 
     def set_x(self, x):
         self.x = x
-        self.label.x = x
+        self.label.x = self.resolution.pixel(x)
 
     def set_y(self, y):
         self.y = y
-        self.label.y = y
+        self.label.y = self.resolution.pixel(y)
 
     def draw(self):
         self.label.draw()

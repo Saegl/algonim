@@ -1,6 +1,7 @@
 import pytest
 
 from algonim import easing
+from algonim.resolution import Resolution
 from algonim.script import Script, ScriptExecutor, fade_in, move_by, parallel, seq, wait
 
 
@@ -65,7 +66,7 @@ def test_seq_runs_one_after_another():
 
 def test_executor_runs_all_steps():
     obj = Dummy()
-    script = Script()
+    script = Script(Resolution.preset("1080p"))
     script.do(fade_in(obj, duration=0.2))
     script.do(move_by(obj, 5, 0, duration=0.2), wait(0.1))
 
