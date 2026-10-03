@@ -43,3 +43,20 @@ class Text:
 
     def draw(self):
         self.label.draw()
+
+
+def ink_bounds(
+    label: pyglet.text.Label, text: str | None = None
+) -> tuple[float, float]:
+    """Bottom and top of the glyphs of `text` (default the label's) relative
+    to the baseline, in pixels. Font ascent and descent include blank space,
+    so anchoring on them centers text visibly off"""
+    font = label.document.get_font(0)
+    glyphs = font.get_glyphs(text or label.text)
+    return min(g.vertices[1] for g in glyphs), max(g.vertices[3] for g in glyphs)
+
+
+def ink_middle(label: pyglet.text.Label, text: str | None = None) -> float:
+    """Height of the glyphs' visual center above the baseline, in pixels"""
+    bottom, top = ink_bounds(label, text)
+    return (bottom + top) / 2

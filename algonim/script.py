@@ -3,6 +3,7 @@ from typing import Any
 
 import pyglet
 
+from algonim.colors import Color, lerp_color
 from algonim.easing import ease_in_out_cubic, ease_linear, ease_out_cubic, lerp
 from algonim.resolution import Resolution
 from algonim.time_utils import Timer
@@ -135,6 +136,17 @@ def tween(prop: Prop[float], end: float, duration: float, ease=ease_linear) -> A
         yield
         prop.value = lerp(start, end, ease(i / n))
     # Exact end value, and the jump for zero duration
+    prop.value = end
+
+
+def tween_color(
+    prop: Prop[Color], end: Color, duration: float, ease=ease_linear
+) -> Anim:
+    start = prop.value
+    n = frames(duration)
+    for i in range(1, n + 1):
+        yield
+        prop.value = lerp_color(start, end, ease(i / n))
     prop.value = end
 
 
